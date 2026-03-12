@@ -1,39 +1,57 @@
-function calculateRiskFromChemical(item) {
-  const amount = Number(document.getElementById("amountLevel")?.value || 1);
-  const freq = Number(document.getElementById("frequencyLevel")?.value || 1);
-  const vent = Number(document.getElementById("ventilationLevel")?.value || 1);
+function getSeverity(ghs) {
 
-  const score =
-    Number(item.hazard_score || 0) +
-    Number(item.danger_score || 0) +
-    amount + freq + vent;
+    let score = 1;
 
-  let label = "리스크 레벨 2";
-  if (score >= 14) label = "리스크 레벨 5";
-  else if (score >= 11) label = "리스크 레벨 4";
-  else if (score >= 8) label = "리스크 레벨 3";
+    if (ghs.health.includes("Carcinogenic")) score = Math.max(score,5);
 
-  const riskBox = document.getElementById("riskBox");
-  const scoreBox = document.getElementById("scoreBox");
-  const controlBox = document.getElementById("controlBox");
+    if (ghs.health.includes("Toxic")) score = Math.max(score,4);
 
-  if (riskBox) riskBox.textContent = label;
-  if (scoreBox) scoreBox.textContent = `점수: ${score}`;
+    if (ghs.health.includes("Corrosive")) score = Math.max(score,4);
 
-  const controls = [];
-  if ((item.ghs || []).some(v => /인화성|flammable/i.test(v))) {
-    controls.push("화기 엄금", "정전기 방지", "국소배기");
-  }
-  if ((item.ghs || []).some(v => /독성|toxic/i.test(v))) {
-    controls.push("밀폐공정 검토", "노출 최소화", "방독마스크 검토");
-  }
-  if ((item.ghs || []).some(v => /부식|corrosive/i.test(v))) {
-    controls.push("내화학 장갑", "보안면", "비상세안장치");
-  }
+    if (ghs.physical.includes("Flammable")) score = Math.max(score,3);
 
-  if (controlBox) {
-    controlBox.innerHTML = [...new Set(controls)].map(v => `<li>${v}</li>`).join("");
-  }
+    if (ghs.health.includes("Irritant")) score = Math.max(score,2);
 
-  return { score, label, controls: [...new Set(controls)] };
+    return score;
+}
+
+
+function getExposure(quantity, environment) {
+
+    let q = 1;
+    let e = 1;
+
+    if (quantity === "small") q = 1;
+    if (quantity === "medium") q = 2;
+    if (quantity === "large") q = 3;
+
+    if (environment === "closed") e = 1;
+    if (environment === "normal") e = 2;
+    if (environment === "open") e = 3;
+
+    return q + e;
+}
+
+
+function calculateRisk(chemical, quantity, environment) {
+
+    const severity = getSeverity(chemical.ghs);
+
+    const exposure = getExposure(quantity, environment);
+
+    const risk = severity * exposure;
+
+    let grade = "LOW";
+
+    if (risk <= 4) grade = "LOW";
+    else if (risk <= 9) grade = "MEDIUM";
+    else if (risk <= 15) grade = "HIGH";
+    else grade = "CRITICAL";
+
+    return {
+        severity: severity,
+        exposure: exposure,
+        risk: risk,
+        grade: grade
+    };
 }

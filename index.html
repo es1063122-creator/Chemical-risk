@@ -147,7 +147,7 @@
     .sheet th,.sheet td{
       border:1px solid var(--line);
       padding:6px 8px;
-      vertical-align:middle;
+      vertical-align:top;
       word-break:break-word;
       font-size:14px;
     }
@@ -179,9 +179,8 @@
       resize:vertical;
       min-height:28px;
     }
-    .sheet textarea{min-height:72px}
     .sheet .sm textarea{min-height:40px}
-    .sheet .lg textarea{min-height:120px}
+    .sheet .lg textarea{min-height:80px}
     .checks{
       display:flex;
       gap:18px;
@@ -261,6 +260,89 @@
       .panel{border:none;box-shadow:none}
       .section{display:block !important;padding:0}
     }
+
+#pdfArea{
+  width:794px;
+  margin:0 auto;
+}
+
+.sheet-wrap{
+  overflow-x:auto;
+  display:block;
+  width:100%;
+}
+
+.sheet{
+  width:794px;
+  min-width:794px;
+  font-size:12px;
+  border-collapse:collapse;
+  table-layout:fixed;
+  background:#fff;
+}
+
+.sheet td{
+  vertical-align:middle;
+}
+
+.sheet input{
+  height:32px;
+  width:100%;
+  border:none;
+  outline:none;
+  background:transparent;
+  font:inherit;
+  box-sizing:border-box;
+}
+
+.sheet textarea{
+  min-height:40px;
+  height:auto;
+  width:100%;
+  border:none;
+  outline:none;
+  background:transparent;
+  font:inherit;
+  resize:vertical;
+  box-sizing:border-box;
+}
+
+.sheet .blue{
+  background:#9fc2cf;
+  font-weight:700;
+  text-align:center;
+}
+
+#summary .sheet-wrap{
+  overflow-x: auto;
+  display: block;
+  width: 100%;
+}
+
+#summary .sheet{
+  width:1123px;
+  min-width:1123px;
+}
+
+#summary .sheet td, #summary .sheet th{
+  font-size:10px;
+  padding:4px;
+}
+
+/* PDF 페이지 자동 분리 */
+.page-break{ page-break-before:always; }
+.sheet tr{ page-break-inside:avoid; }
+.sheet{ page-break-inside:auto; }
+.sheet-wrap{ page-break-inside:auto; }
+
+@media print{
+  .sheet{ width:100% !important; min-width:unset !important; }
+  .sheet-wrap{ overflow:visible !important; display:block !important; }
+  #pdfArea{ width:100% !important; }
+}
+
+
+
   </style>
 </head>
 <body>
@@ -272,7 +354,8 @@
     <div class="controls">
       <button id="lang-ko" class="active">한국어</button>
       <button id="lang-ja">日本語</button>
-      <button onclick="downloadPDF()" data-i18n="pdfBtn">PDF 보고서 저장</button>
+      <button onclick="downloadReportPDF()">실시보고서 PDF</button>
+<button onclick="downloadSummaryPDF()">결과일람 PDF</button>
     </div>
   </div>
 
@@ -350,6 +433,9 @@
               <div>
                 <input id="sdsFile" type="file" accept="application/pdf" />
                 <div id="pdfStatus" class="small muted" style="margin-top:6px">-</div>
+                <button onclick="openSigmaMSDS()" style="margin-top:6px">
+      MSDS 다운로드
+    </button>
               </div>
             </div>
 
@@ -439,11 +525,18 @@
           <button onclick="clearReport1()" data-i18n="clearAll">전체 초기화</button>
         </div>
 
-        <div class="sheet-wrap" id="pdfArea">
-          <table class="sheet">
+        <div class="sheet-wrap" id="pdfAreaWrap">
+          <table class="sheet" id="pdfArea">
             <colgroup>
-              <col style="width:82px"><col style="width:62px"><col style="width:115px"><col style="width:92px"><col style="width:270px"><col style="width:115px"><col style="width:115px"><col style="width:115px">
-            </colgroup>
+  <col style="width:60px">
+  <col style="width:65px">
+  <col style="width:100px">
+  <col style="width:100px">
+  <col style="width:120px">
+  <col style="width:100px">
+  <col style="width:110px">
+  <col style="width:139px">
+</colgroup>
 
             <tr><th colspan="8" class="title" data-i18n="reportTitle">리스크 어세스먼트 실시 보고서</th></tr>
 
@@ -495,7 +588,7 @@
         <div class="sheet-wrap">
           <table class="sheet">
             <colgroup>
-              <col style="width:80px"><col style="width:90px"><col style="width:240px"><col style="width:90px"><col style="width:240px"><col style="width:110px"><col style="width:90px"><col style="width:90px">
+              <col style="width:70px"><col style="width:75px"><col style="width:189px"><col style="width:75px"><col style="width:189px"><col style="width:76px"><col style="width:60px"><col style="width:60px">
             </colgroup>
 
             <tr><th colspan="8" class="title" data-i18n="reportTitle">리스크 어세스먼트 실시 보고서</th></tr>
@@ -518,10 +611,34 @@
             <tr><td colspan="8" class="label" data-i18n="resultTitle">3. 리스크 어세스먼트 결과</td></tr>
             <tr><td class="subhead2"></td><td colspan="3" class="subhead" data-i18n="harmfulness">유해성</td><td colspan="4" class="subhead" data-i18n="danger">위험성</td></tr>
             <tr><td class="subhead2"></td><td class="subhead2" data-i18n="method">평가 방법</td><td colspan="2" class="subhead2" data-i18n="riskLevel">위험 수준</td><td class="subhead2" data-i18n="method">평가 방법</td><td colspan="3" class="subhead2" data-i18n="riskLevel">위험 수준</td></tr>
-            <tr><td class="blue" data-i18n="mat1">물질 ①</td><td><input id="r2-hm1-method"></td><td colspan="2"><textarea id="r2-hm1-level"></textarea></td><td><input id="r2-dm1-method"></td><td colspan="3"><textarea id="r2-dm1-level"></textarea></td></tr>
-            <tr><td class="blue" data-i18n="mat2">물질 ②</td><td><input></td><td colspan="2"><textarea></textarea></td><td><input></td><td colspan="3"><textarea></textarea></td></tr>
-            <tr><td class="blue" data-i18n="mat3">물질 ③</td><td><input></td><td colspan="2"><textarea></textarea></td><td><input></td><td colspan="3"><textarea></textarea></td></tr>
-            <tr><td class="blue" data-i18n="mat4">물질 ④</td><td><input></td><td colspan="2"><textarea></textarea></td><td><input></td><td colspan="3"><textarea></textarea></td></tr>
+            <tr>
+  <td class="blue" data-i18n="mat1">물질 ①</td>
+  <td><input id="r2-hm1-method"></td>
+  <td colspan="2"><textarea id="r2-hm1-level"></textarea></td>
+  <td><input id="r2-dm1-method"></td>
+  <td colspan="3"><textarea id="r2-dm1-level"></textarea></td>
+</tr>
+<tr>
+  <td class="blue" data-i18n="mat2">물질 ②</td>
+  <td><input id="r2-hm2-method"></td>
+  <td colspan="2"><textarea id="r2-hm2-level"></textarea></td>
+  <td><input id="r2-dm2-method"></td>
+  <td colspan="3"><textarea id="r2-dm2-level"></textarea></td>
+</tr>
+<tr>
+  <td class="blue" data-i18n="mat3">물질 ③</td>
+  <td><input id="r2-hm3-method"></td>
+  <td colspan="2"><textarea id="r2-hm3-level"></textarea></td>
+  <td><input id="r2-dm3-method"></td>
+  <td colspan="3"><textarea id="r2-dm3-level"></textarea></td>
+</tr>
+<tr>
+  <td class="blue" data-i18n="mat4">물질 ④</td>
+  <td><input id="r2-hm4-method"></td>
+  <td colspan="2"><textarea id="r2-hm4-level"></textarea></td>
+  <td><input id="r2-dm4-method"></td>
+  <td colspan="3"><textarea id="r2-dm4-level"></textarea></td>
+</tr>
 
             <tr><td colspan="5" class="subhead" data-i18n="riskReductionContent">리스크 저감조치 내용</td><td class="subhead" data-i18n="status">대응상황</td><td class="subhead" data-i18n="dueDate">실시기한</td><td class="subhead" data-i18n="doneDate">완료일</td></tr>
             <tr>
@@ -805,6 +922,7 @@
 
   let currentLang = 'ko';
   let lastAnalysis = null;
+  let materialIndex = 1;
 
   function setTab(id){
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
@@ -849,52 +967,75 @@
       : `외부 DB 파일이 없어 데모 DB로 동작 중입니다. chemical-db-800.js를 같은 폴더에 두면 자동 연결됩니다.`;
   }
 
-  function getChemicalName(item){
-    return item[`name_${currentLang}`] || item.name_ko || item.name_ja || item.name_en || '';
-  }
+function getChemicalName(item){
+
+  return (
+    item[`name_${currentLang}`] ||
+    item.name?.[currentLang] ||
+    item.name_ko ||
+    item.name?.ko ||
+    item.name_en ||
+    item.name?.en ||
+    ''
+  );
+}
 
   function normalize(v){
     return (v || '').toString().trim().toLowerCase();
   }
 
   function searchChemicalRecord(keyword){
-    const k = normalize(keyword);
-    if(!k) return null;
 
-    const casMatch = keyword.match(/\b\d{2,7}-\d{2}-\d\b/);
-    if(casMatch){
-      const exactCas = casMatch[0];
-      const byCas = DB.find(item => normalize(item.cas) === normalize(exactCas));
-      if(byCas) return byCas;
-    }
+  const k = normalize(keyword);
+  if(!k) return null;
 
-    return DB.find(item =>
-      normalize(item.cas).includes(k) ||
-      normalize(item.name_ko).includes(k) ||
-      normalize(item.name_ja).includes(k) ||
-      normalize(item.name_en).includes(k)
-    ) || null;
+  const casMatch = keyword.match(/\b\d{2,7}-\d{2}-\d\b/);
+
+  if(casMatch){
+    const cas = casMatch[0];
+
+    const byCas = DB.find(item =>
+      normalize(item.cas || item.cas_no) === normalize(cas)
+    );
+
+    if(byCas) return byCas;
   }
 
-  function searchChemicalList(keyword){
-    const k = normalize(keyword);
-    if(!k) return [];
-    return DB.filter(item =>
-      normalize(item.cas).includes(k) ||
-      normalize(item.name_ko).includes(k) ||
-      normalize(item.name_ja).includes(k) ||
-      normalize(item.name_en).includes(k)
-    ).slice(0, 20);
-  }
+  return DB.find(item =>
 
-  function updateAutocomplete(){
-    const list = document.getElementById('chemicalSuggestions');
-    const q = document.getElementById('searchKeyword').value;
-    const matches = searchChemicalList(q);
-    list.innerHTML = matches.map(item =>
-      `<option value="${item.cas || getChemicalName(item)}">${getChemicalName(item)} / ${item.cas || '-'}</option>`
-    ).join('');
-  }
+    normalize(item.cas || item.cas_no).includes(k) ||
+
+    normalize(item.name_ko || item.name?.ko).includes(k) ||
+
+    normalize(item.name_ja || item.name?.ja).includes(k) ||
+
+    normalize(item.name_en || item.name?.en).includes(k)
+
+  ) || null;
+}
+
+ function searchChemicalList(keyword){
+  const k = normalize(keyword);
+  if(!k) return [];
+
+  return DB.filter(item =>
+    normalize(item.cas || item.cas_no).includes(k) ||
+    normalize(item.name_ko || item.name?.ko).includes(k) ||
+    normalize(item.name_ja || item.name?.ja).includes(k) ||
+    normalize(item.name_en || item.name?.en).includes(k)
+  ).slice(0, 20);
+}
+
+function updateAutocomplete(){
+  const list = document.getElementById('chemicalSuggestions');
+  const q = document.getElementById('searchKeyword').value;
+  const matches = searchChemicalList(q);
+
+  list.innerHTML = matches.map(item => {
+    const cas = item.cas || item.cas_no || '-';
+    return `<option value="${cas}">${getChemicalName(item)} / ${cas}</option>`;
+  }).join('');
+}
 
   function buildControls(item){
     const controls = [];
@@ -963,7 +1104,7 @@
 
   function applyChemical(item){
     document.getElementById('chemName').value = getChemicalName(item);
-    document.getElementById('casNo').value = item.cas || '';
+    document.getElementById('casNo').value = item.cas || item.cas_no || '';
   }
 
   function analyzeChemical(){
@@ -1005,117 +1146,209 @@
     document.getElementById('controlBox').innerHTML = controls.map(v=>`<li>${v}</li>`).join('');
   }
 
-  function pushAnalysisToReport(){
-    if(!lastAnalysis){
-      analyzeChemical();
-      if(!lastAnalysis) return;
-    }
-
-    const item = lastAnalysis.item;
-
-    document.getElementById('r1-work').value = document.getElementById('workDesc').value;
-    document.getElementById('m1-name').value = getChemicalName(item);
-    document.getElementById('m1-cas').value = item.cas || '';
-
-    document.getElementById('r2-work').value = document.getElementById('workDesc').value;
-    document.getElementById('r2m1-name').value = getChemicalName(item);
-    document.getElementById('r2m1-cas').value = item.cas || '';
-
-    document.getElementById('r2-hm1-method').value = item.hazardMethod || '컨트롤 밴딩';
-    document.getElementById('r2-hm1-level').value = `${lastAnalysis.risk.level} / ${(item.ghs || []).join(', ')}`;
-    document.getElementById('r2-dm1-method').value = item.dangerMethod || '위험성 스크리닝 도구';
-    document.getElementById('r2-dm1-level').value = `${lastAnalysis.risk.level} / ${(item.storage || []).join(', ')}`;
-    document.getElementById('r2-control').value = lastAnalysis.controls.join('\n');
-
-    fillMaterial1(lastAnalysis);
-    setTab('report1');
+  function pushAnalysisToReport() {
+  if (!lastAnalysis) {
+    analyzeChemical();
+    if (!lastAnalysis) return;
   }
 
-  function fillMaterial1(data){
-    const item = data.item;
-    const controls = data.controls.join(', ');
-
-    document.getElementById('r1-h-method').value = item.hazardMethod || '컨트롤 밴딩';
-    document.getElementById('r1-h-risk').value = `${data.risk.level} / ${(item.ghs || []).join(', ')}`;
-    document.getElementById('r1-h-content').value = controls;
-    document.getElementById('r1-h-due').value = new Date().toISOString().slice(0,10);
-
-    document.getElementById('r1-d-method').value = item.dangerMethod || '위험성 스크리닝 도구';
-    document.getElementById('r1-d-risk').value = `${data.risk.level} / ${(item.storage || []).join(', ')}`;
-    document.getElementById('r1-d-content').value = controls;
-    document.getElementById('r1-d-due').value = new Date().toISOString().slice(0,10);
+  if (materialIndex > 4) {
+    alert("최대 4개 화학물질까지 입력 가능합니다.");
+    return;
   }
+
+  const item = lastAnalysis.item;
+  const idx = materialIndex;
+
+  /* -------------------------
+     보고서1 화학물질 입력
+  ------------------------- */
+  const r1Name = document.getElementById(`m${idx}-name`);
+  const r1Cas = document.getElementById(`m${idx}-cas`);
+  if (r1Name) r1Name.value = getChemicalName(item);
+  if (r1Cas) r1Cas.value = item.cas || "";
+
+  /* -------------------------
+     보고서2 화학물질 입력
+  ------------------------- */
+  const r2Name = document.getElementById(`r2m${idx}-name`);
+  const r2Cas = document.getElementById(`r2m${idx}-cas`);
+  if (r2Name) r2Name.value = getChemicalName(item);
+  if (r2Cas) r2Cas.value = item.cas || "";
+
+  /* -------------------------
+     작업명은 첫 물질에서만 입력
+  ------------------------- */
+  if (idx === 1) {
+    const work = document.getElementById("workDesc").value || "";
+    const r1Work = document.getElementById("r1-work");
+    const r2Work = document.getElementById("r2-work");
+    const r2Control = document.getElementById("r2-control");
+
+    if (r1Work) r1Work.value = work;
+    if (r2Work) r2Work.value = work;
+    if (r2Control) r2Control.value = lastAnalysis.controls.join("\n");
+  }
+
+  /* -------------------------
+     보고서1 결과 입력
+  ------------------------- */
+  fillMaterialResultR1(idx, lastAnalysis);
+
+  /* -------------------------
+     보고서2 결과 입력
+  ------------------------- */
+  fillMaterialResultR2(idx, lastAnalysis);
+
+  updateSummary();
+
+  materialIndex++;
+  setTab("report1");
+}
+
 
   function renderReport1(){
     const body = document.getElementById('report1Body');
     body.innerHTML = `
-      ${materialBlock('1','r1-h-method','r1-h-risk','r1-h-content','r1-h-due','r1-h-done','r1-h-remark','r1-d-method','r1-d-risk','r1-d-content','r1-d-due','r1-d-done','r1-d-remark')}
+      ${materialBlock('1','m1-h-method','m1-h-risk','m1-h-content','m1-h-due','m1-h-done','m1-h-remark','m1-d-method','m1-d-risk','m1-d-content','m1-d-due','m1-d-done','m1-d-remark')}
       ${materialBlock('2','m2-h-method','m2-h-risk','m2-h-content','m2-h-due','m2-h-done','m2-h-remark','m2-d-method','m2-d-risk','m2-d-content','m2-d-due','m2-d-done','m2-d-remark')}
       ${materialBlock('3','m3-h-method','m3-h-risk','m3-h-content','m3-h-due','m3-h-done','m3-h-remark','m3-d-method','m3-d-risk','m3-d-content','m3-d-due','m3-d-done','m3-d-remark')}
       ${materialBlock('4','m4-h-method','m4-h-risk','m4-h-content','m4-h-due','m4-h-done','m4-h-remark','m4-d-method','m4-d-risk','m4-d-content','m4-d-due','m4-d-done','m4-d-remark')}
     `;
   }
 
-  function materialBlock(n, hm, hr, hc, hd, hdone, hrem, dm, dr, dc, dd, ddone, drem){
-    const t = DICT[currentLang];
-    return `
-      <tr>
-        <td rowspan="14" class="blue">${t['mat'+n]}</td>
-        <td rowspan="7">${t.harmfulness}</td>
-        <td>${t.method}</td>
-        <td colspan="4"><input id="${hm}"></td>
-        <td colspan="2"></td>
-      </tr>
-      <tr><td>${t.riskLevel}</td><td colspan="4"><textarea class="sm" id="${hr}"></textarea></td><td colspan="2"></td></tr>
-      <tr><td rowspan="5">${t.riskReduction}</td><td>${t.content}</td><td colspan="4"><textarea class="sm" id="${hc}"></textarea></td><td colspan="2"></td></tr>
-      <tr><td>${t.status}</td><td colspan="4"><div class="checks"><label><input type="checkbox"> ${t.doAction}</label><label><input type="checkbox"> ${t.hold}</label><label><input type="checkbox"> ${t.maintain}</label></div></td><td colspan="2"></td></tr>
-      <tr><td>${t.dueDate}</td><td colspan="4"><input id="${hd}"></td><td colspan="2"></td></tr>
-      <tr><td>${t.doneDate}</td><td colspan="4"><input id="${hdone}"></td><td colspan="2"></td></tr>
-      <tr><td>${t.remark}</td><td colspan="4"><textarea class="sm" id="${hrem}"></textarea></td><td colspan="2"></td></tr>
+ function materialBlock(n){
 
-      <tr>
-        <td rowspan="7">${t.danger}</td>
-        <td>${t.method}</td>
-        <td colspan="4"><input id="${dm}"></td>
-        <td colspan="2"></td>
-      </tr>
-      <tr><td>${t.riskLevel}</td><td colspan="4"><textarea class="sm" id="${dr}"></textarea></td><td colspan="2"></td></tr>
-      <tr><td rowspan="5">${t.riskReduction}</td><td>${t.content}</td><td colspan="4"><textarea class="sm" id="${dc}"></textarea></td><td colspan="2"></td></tr>
-      <tr><td>${t.status}</td><td colspan="4"><div class="checks"><label><input type="checkbox"> ${t.doAction}</label><label><input type="checkbox"> ${t.hold}</label><label><input type="checkbox"> ${t.maintain}</label></div></td><td colspan="2"></td></tr>
-      <tr><td>${t.dueDate}</td><td colspan="4"><input id="${dd}"></td><td colspan="2"></td></tr>
-      <tr><td>${t.doneDate}</td><td colspan="4"><input id="${ddone}"></td><td colspan="2"></td></tr>
-      <tr><td>${t.remark}</td><td colspan="4"><textarea class="sm" id="${drem}"></textarea></td><td colspan="2"></td></tr>
-    `;
-  }
+const t = DICT[currentLang];
 
-  function renderSummary(){
-    const body = document.getElementById('summaryBody');
-    body.innerHTML = Array.from({length:6}).map((_,i)=>`
-      <tr>
-        <td><input value="${i===0?'AB 공장':''}"></td>
-        <td><input value="${i===0?'CCC':''}"></td>
-        <td><input value="${i===0?'DDD':''}"></td>
-        <td><input value="${i===0?'2026-03-11':''}"></td>
-        <td><input value="${i===0?'2026-09-11':''}"></td>
-        <td><textarea>${i===0?'세정 작업':''}</textarea></td>
-        <td><input value="${i===0?'세정제':''}"></td>
-        <td><input value="${i===0?'아세톤':''}"></td>
-        <td><input value="${i===0?'67-64-1':''}"></td>
-        <td><textarea>${i===0?'컨트롤 밴딩':''}</textarea></td>
-        <td><textarea>${i===0?'리스크 레벨 4 / 인화성, 눈 자극':''}</textarea></td>
-        <td><textarea>${i===0?'보호장갑, 국소배기, 화기 엄금':''}</textarea></td>
-        <td><input value="${i===0?'대응한다':''}"></td>
-        <td><input value="${i===0?'2026-04-30':''}"></td>
-        <td><textarea></textarea></td>
-        <td><textarea>${i===0?'위험성 스크리닝':''}</textarea></td>
-        <td><textarea>${i===0?'리스크 레벨 4 / 저장, 환기 관리':''}</textarea></td>
-        <td><textarea>${i===0?'점화원 차단, 정전기 방지':''}</textarea></td>
-        <td><input value="${i===0?'현상 유지':''}"></td>
-        <td><input value="${i===0?'2026-04-30':''}"></td>
-        <td><textarea></textarea></td>
-      </tr>
-    `).join('');
-  }
+return `
+
+<tr>
+<td rowspan="14" class="blue">${t['mat'+n]}</td>
+<td rowspan="7">${t.harmfulness}</td>
+<td>${t.method}</td>
+<td colspan="5"><input id="m${n}-h-method"></td>
+</tr>
+
+<tr>
+<td>${t.riskLevel}</td>
+<td colspan="5"><textarea id="m${n}-h-risk"></textarea></td>
+</tr>
+
+<tr>
+<td>${t.content}</td>
+<td colspan="5"><textarea id="m${n}-h-content"></textarea></td>
+</tr>
+
+<tr>
+<td>${t.status}</td>
+<td colspan="5">
+<div class="checks">
+<label><input type="checkbox"> ${t.doAction}</label>
+<label><input type="checkbox"> ${t.hold}</label>
+<label><input type="checkbox"> ${t.maintain}</label>
+</div>
+</td>
+</tr>
+
+<tr>
+<td>${t.dueDate}</td>
+<td colspan="5"><input id="m${n}-h-due"></td>
+</tr>
+
+<tr>
+<td>${t.doneDate}</td>
+<td colspan="5"><input id="m${n}-h-done"></td>
+</tr>
+
+<tr>
+<td>${t.remark}</td>
+<td colspan="5"><textarea id="m${n}-h-remark"></textarea></td>
+</tr>
+
+<tr>
+<td rowspan="7">${t.danger}</td>
+<td>${t.method}</td>
+<td colspan="5"><input id="m${n}-d-method"></td>
+</tr>
+
+<tr>
+<td>${t.riskLevel}</td>
+<td colspan="5"><textarea id="m${n}-d-risk"></textarea></td>
+</tr>
+
+<tr>
+<td>${t.content}</td>
+<td colspan="5"><textarea id="m${n}-d-content"></textarea></td>
+</tr>
+
+<tr>
+<td>${t.status}</td>
+<td colspan="5">
+<div class="checks">
+<label><input type="checkbox"> ${t.doAction}</label>
+<label><input type="checkbox"> ${t.hold}</label>
+<label><input type="checkbox"> ${t.maintain}</label>
+</div>
+</td>
+</tr>
+
+<tr>
+<td>${t.dueDate}</td>
+<td colspan="5"><input id="m${n}-d-due"></td>
+</tr>
+
+<tr>
+<td>${t.doneDate}</td>
+<td colspan="5"><input id="m${n}-d-done"></td>
+</tr>
+
+<tr>
+<td>${t.remark}</td>
+<td colspan="5"><textarea id="m${n}-d-remark"></textarea></td>
+</tr>
+
+`;
+}
+
+function splitControls(list){
+
+let health = [];
+let danger = [];
+
+list.forEach(v=>{
+
+if(
+/환기|보호|장갑|보안경|노출|PPE|mask|respirator/i.test(v)
+){
+health.push(v);
+}
+else if(
+/화기|점화|정전기|폭발|차단|fail|페일|누출/i.test(v)
+){
+danger.push(v);
+}
+else{
+health.push(v);
+}
+
+});
+
+return {
+health: health.join(", "),
+danger: danger.join(", ")
+};
+
+}
+
+
+
+
+
+ function renderSummary(){
+  const body = document.getElementById("summaryBody");
+  body.innerHTML = "";
+}
 
   function fillAnalyzerDemo(){
     document.getElementById('searchKeyword').value = '67-64-1';
@@ -1152,8 +1385,8 @@
   }
 
   function fillDemoSummary(){
-    renderSummary();
-  }
+  updateSummary();
+}
 
   function fillDemoAll(){
     fillAnalyzerDemo();
@@ -1181,10 +1414,12 @@
     lastAnalysis = null;
   }
 
-  function clearReport1(){
-    document.querySelectorAll('#report1 input, #report1 textarea').forEach(el=>el.value='');
-    document.querySelectorAll('#report1 input[type="checkbox"]').forEach(el=>el.checked=false);
-  }
+ function clearReport1(){
+  document.querySelectorAll('#report1 input, #report1 textarea').forEach(el=>el.value='');
+  document.querySelectorAll('#report1 input[type="checkbox"]').forEach(el=>el.checked=false);
+
+  materialIndex = 1;
+}
 
   function buildPdfFileName(){
     const site = document.getElementById('r1-site')?.value || 'chemical-risk';
@@ -1193,17 +1428,71 @@
     return `${site}_${chem}_${date}.pdf`.replace(/\s+/g, '_');
   }
 
-  function downloadPDF(){
-    const target = document.getElementById('pdfArea') || document.body;
-    const opt = {
-      margin:8,
-      filename:buildPdfFileName(),
-      image:{type:'jpeg', quality:0.98},
-      html2canvas:{scale:2},
-      jsPDF:{unit:'mm', format:'a4', orientation:'portrait'}
-    };
-    html2pdf().set(opt).from(target).save();
+  function prepareForPdf(container){
+    const saved = [];
+    container.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea').forEach(el=>{
+      const span = document.createElement('span');
+      span.style.cssText = 'display:block;width:100%;min-height:24px;font:inherit;font-size:12px;white-space:pre-wrap;word-break:break-word;padding:2px 4px;box-sizing:border-box;line-height:1.5;';
+      span.textContent = el.value || '';
+      el.parentNode.insertBefore(span, el);
+      el.style.display = 'none';
+      saved.push({el, span});
+    });
+    container.querySelectorAll('input[type=checkbox]').forEach(el=>{
+      const span = document.createElement('span');
+      span.style.cssText = 'font-size:14px;margin-right:3px;';
+      span.textContent = el.checked ? '☑' : '☐';
+      el.parentNode.insertBefore(span, el);
+      el.style.display = 'none';
+      saved.push({el, span});
+    });
+    return saved;
   }
+
+  function restoreAfterPdf(saved){
+    saved.forEach(({el,span})=>{ el.style.display=''; span.remove(); });
+  }
+
+  function downloadReportPDF(){
+    const el = document.getElementById('pdfArea');
+    if(!el) return;
+    const saved = prepareForPdf(el);
+    // 일시적으로 overflow 해제
+    el.style.overflow = 'visible';
+    html2pdf().set({
+      margin:[8,6,8,6],
+      filename:buildPdfFileName(),
+      image:{type:'jpeg',quality:0.98},
+      html2canvas:{scale:2,useCORS:true,scrollX:0,scrollY:0,width:794,windowWidth:810},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy'],avoid:['tr']}
+    }).from(el).save()
+      .then(()=>{ restoreAfterPdf(saved); el.style.overflow=''; })
+      .catch(()=>{ restoreAfterPdf(saved); el.style.overflow=''; });
+  }
+
+  function downloadSummaryPDF(){
+    const tableWrap = document.querySelector('#summary .sheet-wrap');
+    if(!tableWrap) return;
+    const saved = prepareForPdf(tableWrap);
+    const site = document.getElementById('r1-site')?.value || 'chemical-risk';
+    const date = document.getElementById('r1-date')?.value || new Date().toISOString().slice(0,10);
+    // 임시로 overflow 해제
+    const origOverflow = tableWrap.style.overflow;
+    tableWrap.style.overflow = 'visible';
+    tableWrap.style.display = 'block';
+    html2pdf().set({
+      margin:[6,4,6,4],
+      filename:`결과일람_${site}_${date}.pdf`.replace(/\s+/g,'_'),
+      image:{type:'jpeg',quality:0.98},
+      html2canvas:{scale:2,useCORS:true,scrollX:0,scrollY:0,width:1123,windowWidth:1200},
+      jsPDF:{unit:'mm',format:'a4',orientation:'landscape'},
+      pagebreak:{mode:['css','legacy'],avoid:['tr']}
+    }).from(tableWrap).save()
+      .then(()=>{ restoreAfterPdf(saved); tableWrap.style.overflow=origOverflow; tableWrap.style.display=''; })
+      .catch(()=>{ restoreAfterPdf(saved); tableWrap.style.overflow=origOverflow; tableWrap.style.display=''; });
+  }
+
 
   function extractCas(text){
     const match = text.match(/\b\d{2,7}-\d{2}-\d\b/);
@@ -1299,6 +1588,27 @@
     });
   }
 
+function openSigmaMSDS(){
+
+  const name = document.getElementById("chemName").value;
+  const cas = document.getElementById("casNo").value;
+
+  let keyword = cas ? cas : name;
+
+  if(!keyword){
+      alert("화학물질명을 먼저 입력하세요");
+      return;
+  }
+
+  const url =
+  "https://www.sigmaaldrich.com/KR/ko/search/" +
+  encodeURIComponent(keyword) +
+  "?focus=products&page=1&perpage=30&sort=relevance";
+
+  window.open(url,"_blank");
+
+}
+
   function init(){
     wireEvents();
     renderReport1();
@@ -1310,6 +1620,129 @@
   }
 
   init();
+
+
+function fillMaterialResultR1(n, data){
+
+  const item = data.item;
+  const controls = splitControls(data.controls);
+  const today = new Date().toISOString().slice(0,10);
+
+  /* 유해성 */
+
+  const hmMethod = document.getElementById(`m${n}-h-method`);
+  const hmRisk   = document.getElementById(`m${n}-h-risk`);
+  const hmCont   = document.getElementById(`m${n}-h-content`);
+  const hmDue    = document.getElementById(`m${n}-h-due`);
+
+  if(hmMethod) hmMethod.value = item.hazardMethod || "컨트롤 밴딩";
+
+  if(hmRisk)
+    hmRisk.value =
+      `${data.risk.level} / ${(item.ghs || []).join(", ")}`;
+
+  if(hmCont) hmCont.value = controls.health;
+
+  if(hmDue) hmDue.value = today;
+
+
+  /* 위험성 */
+
+  const dmMethod = document.getElementById(`m${n}-d-method`);
+  const dmRisk   = document.getElementById(`m${n}-d-risk`);
+  const dmCont   = document.getElementById(`m${n}-d-content`);
+  const dmDue    = document.getElementById(`m${n}-d-due`);
+
+  if(dmMethod) dmMethod.value =
+      item.dangerMethod || "위험성 스크리닝 도구";
+
+  if(dmRisk)
+    dmRisk.value =
+      `${data.risk.level} / ${(item.storage || []).join(", ")}`;
+
+  if(dmCont) dmCont.value = controls.danger;
+
+  if(dmDue) dmDue.value = today;
+}
+
+function fillMaterialResultR2(n, data) {
+  const item = data.item;
+
+  const hmMethod = document.getElementById(`r2-hm${n}-method`);
+  const hmLevel  = document.getElementById(`r2-hm${n}-level`);
+  const dmMethod = document.getElementById(`r2-dm${n}-method`);
+  const dmLevel  = document.getElementById(`r2-dm${n}-level`);
+
+  if (hmMethod) hmMethod.value = item.hazardMethod || "컨트롤 밴딩";
+  if (hmLevel) hmLevel.value = `${data.risk.level} / ${(item.ghs || []).join(", ")}`;
+
+  if (dmMethod) dmMethod.value = item.dangerMethod || "위험성 스크리닝 도구";
+  if (dmLevel) dmLevel.value = `${data.risk.level} / ${(item.storage || []).join(", ")}`;
+}
+
+function updateSummary(){
+
+  const body = document.getElementById("summaryBody");
+  body.innerHTML = "";
+
+  const site  = document.getElementById("r1-site")?.value || "";
+  const mgr   = document.getElementById("r1-manager")?.value || "";
+  const staff = document.getElementById("r1-staff")?.value || "";
+  const date  = document.getElementById("r1-date")?.value || "";
+  const next  = document.getElementById("r1-next")?.value || "";
+  const work  = document.getElementById("r1-work")?.value || "";
+
+  for(let i=1;i<=4;i++){
+
+    const name = document.getElementById(`m${i}-name`)?.value || "";
+    if(!name) continue;
+
+    const cas = document.getElementById(`m${i}-cas`)?.value || "";
+
+    const hmMethod = document.getElementById(`m${i}-h-method`)?.value || "";
+    const hmRisk   = document.getElementById(`m${i}-h-risk`)?.value || "";
+    const hmCont   = document.getElementById(`m${i}-h-content`)?.value || "";
+    const hmDue    = document.getElementById(`m${i}-h-due`)?.value || "";
+
+    const dmMethod = document.getElementById(`m${i}-d-method`)?.value || "";
+    const dmRisk   = document.getElementById(`m${i}-d-risk`)?.value || "";
+    const dmCont   = document.getElementById(`m${i}-d-content`)?.value || "";
+    const dmDue    = document.getElementById(`m${i}-d-due`)?.value || "";
+
+    const row = `
+      <tr>
+        <td><input value="${site}"></td>
+        <td><input value="${mgr}"></td>
+        <td><input value="${staff}"></td>
+        <td><input value="${date}"></td>
+        <td><input value="${next}"></td>
+        <td><textarea>${work}</textarea></td>
+
+        <td><input value=""></td>
+        <td><input value="${name}"></td>
+        <td><input value="${cas}"></td>
+
+        <td><textarea>${hmMethod}</textarea></td>
+        <td><textarea>${hmRisk}</textarea></td>
+        <td><textarea>${hmCont}</textarea></td>
+        <td><input value="대응한다"></td>
+        <td><input value="${hmDue}"></td>
+
+        <td><textarea>${dmMethod}</textarea></td>
+        <td><textarea>${dmRisk}</textarea></td>
+        <td><textarea>${dmCont}</textarea></td>
+        <td><input value="현상 유지"></td>
+        <td><input value="${dmDue}"></td>
+
+        <td><textarea></textarea></td>
+      </tr>
+    `;
+
+    body.insertAdjacentHTML("beforeend", row);
+  }
+}
+
+
 </script>
 </body>
 </html>

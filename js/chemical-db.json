@@ -1,0 +1,97 @@
+[
+  {
+    "name_en": "acetone",
+    "iupac": "propan-2-one",
+    "formula": "C3H6O"
+  },
+  {
+    "name_en": "toluene",
+    "iupac": "toluene",
+    "formula": "C7H8"
+  },
+  {
+    "name_en": "methanol",
+    "iupac": "methanol",
+    "formula": "CH4O"
+  },
+  {
+    "name_en": "ethanol",
+    "iupac": "ethanol",
+    "formula": "C2H6O"
+  },
+  {
+    "name_en": "isopropanol",
+    "iupac": "propan-2-ol",
+    "formula": "C3H8O"
+  },
+  {
+    "name_en": "ethyl acetate",
+    "iupac": "ethyl acetate",
+    "formula": "C4H8O2"
+  },
+  {
+    "name_en": "butyl acetate",
+    "iupac": "butyl acetate",
+    "formula": "C6H12O2"
+  },
+  {
+    "name_en": "styrene",
+    "iupac": "styrene",
+    "formula": "C8H8"
+  },
+  {
+    "name_en": "benzene",
+    "iupac": "benzene",
+    "formula": "C6H6"
+  },
+  {
+    "name_en": "phenol",
+    "iupac": "phenol",
+    "formula": "C6H6O"
+  },
+  {
+    "name_en": "aniline",
+    "iupac": "aniline",
+    "formula": "C6H7N"
+  },
+  {
+    "name_en": "cyclohexane",
+    "iupac": "cyclohexane",
+    "formula": "C6H12"
+  },
+  {
+    "name_en": "n-hexane",
+    "iupac": "hexane",
+    "formula": "C6H14"
+  },
+  {
+    "name_en": "formaldehyde",
+    "iupac": "formaldehyde",
+    "formula": "CH2O"
+  },
+  {
+    "name_en": "ammonia",
+    "iupac": "azane",
+    "formula": "H3N"
+  },
+  {
+    "name_en": "hydrogen peroxide",
+    "iupac": "hydrogen peroxide",
+    "formula": "H2O2"
+  },
+  {
+    "name_en": "acetic acid",
+    "iupac": "acetic acid",
+    "formula": "C2H4O2"
+  },
+  {
+    "name_en": "sulfuric acid",
+    "iupac": "sulfuric acid",
+    "formula": "H2O4S"
+  },
+  {
+    "name_en": "hydrochloric acid",
+    "iupac": "chlorane",
+    "formula": "ClH"
+  }
+]

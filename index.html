@@ -4,7 +4,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Chemical Risk Assessment Studio</title>
+
+  <!-- 외부 DB 파일이 있으면 자동 연결됨 -->
+  <script src="js/chemical-db-800.js"></script>
+  <script src="js/risk-engine.js"></script>
+
+  <!-- PDF 출력 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- PDF 읽기 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
   <style>
     :root{
       --bg:#f4f7f8;
@@ -21,58 +31,225 @@
       --warn:#8b5a10;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:"Noto Sans KR","Malgun Gothic","Segoe UI","Yu Gothic","Meiryo",sans-serif;background:var(--bg);color:#111}
-    .topbar{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid #d7e1e3;padding:12px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+    body{
+      margin:0;
+      font-family:"Noto Sans KR","Malgun Gothic","Segoe UI","Yu Gothic","Meiryo",sans-serif;
+      background:var(--bg);
+      color:#111;
+    }
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:30;
+      background:#fff;
+      border-bottom:1px solid #d7e1e3;
+      padding:12px 16px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
     .brand strong{font-size:22px;color:var(--brand)}
     .brand small{display:block;color:var(--muted);margin-top:2px}
-    .controls,.tabs,.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    button,select,.ghost-input{border:1px solid #c7d8dc;background:#fff;color:#153f45;padding:9px 12px;border-radius:10px;font-weight:700}
+    .controls,.tabs,.toolbar{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    button,select,.ghost-input{
+      border:1px solid #c7d8dc;
+      background:#fff;
+      color:#153f45;
+      padding:9px 12px;
+      border-radius:10px;
+      font-weight:700;
+    }
     button{cursor:pointer}
-    button.active{background:var(--accent);border-color:var(--accent);color:#fff}
-    .page{max-width:1500px;margin:18px auto 48px;padding:0 14px}
+    button.active{
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#fff;
+    }
+    .page{
+      max-width:1500px;
+      margin:18px auto 48px;
+      padding:0 14px;
+    }
     .tabs{margin-bottom:14px}
-    .tab-btn{border:1px solid #c7d8dc;background:#fff;color:#153f45;padding:10px 14px;border-radius:12px;font-weight:800;cursor:pointer}
-    .tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
-    .panel{background:var(--panel);border:1px solid #d9e3e5;border-radius:18px;box-shadow:0 10px 24px rgba(0,0,0,.05);overflow:hidden}
+    .tab-btn{
+      border:1px solid #c7d8dc;
+      background:#fff;
+      color:#153f45;
+      padding:10px 14px;
+      border-radius:12px;
+      font-weight:800;
+      cursor:pointer;
+    }
+    .tab-btn.active{
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#fff;
+    }
+    .panel{
+      background:var(--panel);
+      border:1px solid #d9e3e5;
+      border-radius:18px;
+      box-shadow:0 10px 24px rgba(0,0,0,.05);
+      overflow:hidden;
+    }
     .section{display:none;padding:18px}
     .section.active{display:block}
-    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
-    .info-card,.action-card{border:1px solid #dce6e8;border-radius:18px;padding:18px;background:linear-gradient(180deg,#fff,#fbfdfd)}
-    .info-card h2,.action-card h2{margin:0 0 10px;color:var(--brand)}
-    .feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
-    .feature{border:1px solid #dbe7ea;border-radius:14px;padding:12px;background:#fbfefe}
-    .feature b{display:block;margin-bottom:6px;color:#143f45}
-    .toolbar{justify-content:flex-end;margin-bottom:12px}
+    .hero{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:16px;
+    }
+    .info-card,.action-card,.form-card,.result-card{
+      border:1px solid #dce6e8;
+      border-radius:18px;
+      padding:18px;
+      background:linear-gradient(180deg,#fff,#fbfdfd);
+    }
+    .info-card h2,.action-card h2,.form-card h2,.result-card h2{
+      margin:0 0 10px;
+      color:var(--brand);
+    }
+    .feature-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+    .feature{
+      border:1px solid #dbe7ea;
+      border-radius:14px;
+      padding:12px;
+      background:#fbfefe;
+    }
+    .feature b{
+      display:block;
+      margin-bottom:6px;
+      color:#143f45;
+    }
+    .toolbar{
+      justify-content:flex-end;
+      margin-bottom:12px;
+    }
     .sheet-wrap{overflow:auto}
-    .sheet{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
-    .sheet th,.sheet td{border:1px solid var(--line);padding:6px 8px;vertical-align:middle;word-break:break-word;font-size:14px}
-    .sheet .title{font-size:28px;font-weight:800;text-align:center;padding:16px 8px;background:#fff}
-    .sheet .subhead{background:var(--head);font-weight:800;text-align:center}
-    .sheet .subhead2{background:var(--head2);font-weight:800;text-align:center}
+    .sheet{
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+      background:#fff;
+    }
+    .sheet th,.sheet td{
+      border:1px solid var(--line);
+      padding:6px 8px;
+      vertical-align:middle;
+      word-break:break-word;
+      font-size:14px;
+    }
+    .sheet .title{
+      font-size:28px;
+      font-weight:800;
+      text-align:center;
+      padding:16px 8px;
+      background:#fff;
+    }
+    .sheet .subhead{
+      background:var(--head);
+      font-weight:800;
+      text-align:center;
+    }
+    .sheet .subhead2{
+      background:var(--head2);
+      font-weight:800;
+      text-align:center;
+    }
     .sheet .blue{background:#c5dfe6}
     .sheet .label{font-weight:700}
-    .sheet input,.sheet textarea,.sheet select{width:100%;border:none;outline:none;background:transparent;font:inherit;resize:vertical;min-height:28px}
+    .sheet input,.sheet textarea,.sheet select{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      font:inherit;
+      resize:vertical;
+      min-height:28px;
+    }
     .sheet textarea{min-height:72px}
     .sheet .sm textarea{min-height:40px}
     .sheet .lg textarea{min-height:120px}
-    .checks{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
-    .checks label{display:flex;align-items:center;gap:6px}
+    .checks{
+      display:flex;
+      gap:18px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .checks label{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
     .muted{color:var(--muted)}
-    .pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      font-weight:800;
+    }
     .pill.high{background:#fde5e5;color:#922222}
     .pill.mid{background:#fff0d8;color:#875400}
     .pill.low{background:#e6f7ec;color:#14693d}
     .stack{display:grid;gap:10px}
-    .analyzer{display:grid;grid-template-columns:380px 1fr;gap:16px}
-    .form-card,.result-card{border:1px solid #dce6e8;border-radius:18px;padding:16px;background:#fff}
-    .form-row{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center;margin-bottom:10px}
-    .form-card input,.form-card textarea,.form-card select{width:100%;padding:10px 12px;border:1px solid #ccdde1;border-radius:12px;background:#fcfefe}
-    .result-box{border:1px solid #dce6e8;border-radius:14px;padding:12px;background:#fbfefe}
-    .list{margin:8px 0 0 0;padding-left:18px}
+    .analyzer{
+      display:grid;
+      grid-template-columns:420px 1fr;
+      gap:16px;
+    }
+    .form-row{
+      display:grid;
+      grid-template-columns:120px 1fr;
+      gap:10px;
+      align-items:center;
+      margin-bottom:10px;
+    }
+    .form-card input,.form-card textarea,.form-card select{
+      width:100%;
+      padding:10px 12px;
+      border:1px solid #ccdde1;
+      border-radius:12px;
+      background:#fcfefe;
+    }
+    .result-box{
+      border:1px solid #dce6e8;
+      border-radius:14px;
+      padding:12px;
+      background:#fbfefe;
+    }
+    .list{
+      margin:8px 0 0 0;
+      padding-left:18px;
+    }
     .list li{margin:4px 0}
     .small{font-size:12px}
-    .summary-table .sheet th,.summary-table .sheet td{font-size:12px;padding:5px 6px}
-    .footer-note{margin-top:10px;color:var(--muted);font-size:13px}
+    .summary-table .sheet th,.summary-table .sheet td{
+      font-size:12px;
+      padding:5px 6px;
+    }
+    .footer-note{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .success{color:var(--ok);font-weight:700}
+    .warning{color:var(--warn);font-weight:700}
+    .danger{color:var(--danger);font-weight:700}
     @media (max-width:1100px){
       .hero,.analyzer{grid-template-columns:1fr}
       .feature-grid{grid-template-columns:1fr}
@@ -90,13 +267,11 @@
   <div class="topbar">
     <div class="brand">
       <strong data-i18n="brand">화학물질 위험성평가 스튜디오</strong>
-      <small data-i18n="brandSub">별도 사이트형 · 다국어 · SDS 자동분석 · PDF 보고서</small>
+      <small data-i18n="brandSub">별도 사이트형 · 한국어/일본어 · SDS 자동분석 · PDF 보고서</small>
     </div>
     <div class="controls">
       <button id="lang-ko" class="active">한국어</button>
       <button id="lang-ja">日本語</button>
-      <button id="lang-en">English</button>
-      <button id="lang-vi">Tiếng Việt</button>
       <button onclick="downloadPDF()" data-i18n="pdfBtn">PDF 보고서 저장</button>
     </div>
   </div>
@@ -115,14 +290,14 @@
         <div class="hero">
           <div class="info-card">
             <h2 data-i18n="homeTitle">별도 사이트 구조로 바로 확장 가능한 화학물질 위험성평가 웹</h2>
-            <p data-i18n="homeDesc">이 버전은 대표님이 요청한 핵심 기능을 한 화면에 넣은 베이스입니다. 화학물질 DB 검색, SDS 위험성 자동 분석, 위험도 점수 계산, 다국어 전환, PDF 보고서 출력까지 바로 테스트할 수 있습니다.</p>
+            <p data-i18n="homeDesc">실제 화학물질 DB 검색, CAS 자동완성, SDS PDF 읽기, 위험도 계산, 보고서 반영, PDF 출력까지 한 화면에서 동작하는 운영형 버전입니다.</p>
             <div class="feature-grid">
               <div class="feature"><b data-i18n="f1">1. 화학물질 자동 DB</b><span data-i18n="f1d">이름 또는 CAS 번호로 검색하고 자동으로 물질 정보를 채웁니다.</span></div>
               <div class="feature"><b data-i18n="f2">2. SDS 자동 분석 엔진</b><span data-i18n="f2d">GHS 분류, 노출경로, PPE, 저장조건, 권장조치를 자동으로 제안합니다.</span></div>
-              <div class="feature"><b data-i18n="f3">3. 위험도 AI 계산</b><span data-i18n="f3d">유해성·위험성·취급량·환기·빈도를 합산하여 위험레벨을 계산합니다.</span></div>
+              <div class="feature"><b data-i18n="f3">3. 위험도 AI 계산</b><span data-i18n="f3d">유해성·위험성·취급량·환기·작업시간·빈도를 합산하여 위험레벨을 계산합니다.</span></div>
               <div class="feature"><b data-i18n="f4">4. PDF 보고서 자동 생성</b><span data-i18n="f4d">입력된 내용을 그대로 PDF로 저장할 수 있습니다.</span></div>
-              <div class="feature"><b data-i18n="f5">5. 다국어 지원</b><span data-i18n="f5d">한국어, 일본어, 영어, 베트남어 전환이 가능합니다.</span></div>
-              <div class="feature"><b data-i18n="f6">6. 별도 사이트 배포형</b><span data-i18n="f6d">chemical-risk 전용 사이트로 GitHub Pages 또는 Firebase Hosting에 배포하기 좋습니다.</span></div>
+              <div class="feature"><b data-i18n="f5">5. 한국어 / 일본어</b><span data-i18n="f5d">한국어와 일본어만 전환되도록 구성했습니다.</span></div>
+              <div class="feature"><b data-i18n="f6">6. 실제 DB 연결형</b><span data-i18n="f6d">window.CHEMICAL_DB 외부 파일이 있으면 자동으로 연결하고, 없으면 데모 DB로 동작합니다.</span></div>
             </div>
           </div>
           <div class="action-card">
@@ -134,10 +309,10 @@
             </div>
             <div style="margin-top:14px">
               <div class="pill high" data-i18n="siteType">별도 사이트형</div>
-              <div class="pill mid" data-i18n="dbStatus">DB 엔진 포함</div>
-              <div class="pill low" data-i18n="langStatus">4개국어 포함</div>
+              <div class="pill mid" id="dbBadge">데모 DB</div>
+              <div class="pill low" id="langBadge">한국어 / 日本語</div>
             </div>
-            <p class="footer-note" data-i18n="homeNote">현재 코드에는 데모용 내장 DB가 들어 있습니다. 실제 운영 시에는 chemical-db.json 파일로 분리해 500개 이상으로 확장하면 됩니다.</p>
+            <p class="footer-note" id="dbInfo">-</p>
           </div>
         </div>
       </section>
@@ -151,23 +326,108 @@
         <div class="analyzer">
           <div class="form-card">
             <h2 data-i18n="inputPanel">입력 패널</h2>
-            <div class="form-row"><label data-i18n="chemSearch">화학물질명 / CAS</label><input id="searchKeyword" placeholder="아세톤 또는 67-64-1" /></div>
-            <div class="form-row"><label data-i18n="chemName">화학물질명</label><input id="chemName" /></div>
-            <div class="form-row"><label>CAS</label><input id="casNo" /></div>
-            <div class="form-row"><label data-i18n="amount">취급량</label><select id="amountLevel"><option value="1" data-i18n="smallAmount">소량</option><option value="2" selected data-i18n="mediumAmount">중간</option><option value="3" data-i18n="largeAmount">대량</option></select></div>
-            <div class="form-row"><label data-i18n="frequency">작업 빈도</label><select id="frequencyLevel"><option value="1" data-i18n="lowFreq">가끔</option><option value="2" selected data-i18n="midFreq">주기적</option><option value="3" data-i18n="highFreq">상시</option></select></div>
-            <div class="form-row"><label data-i18n="ventilation">환기 상태</label><select id="ventilationLevel"><option value="1" data-i18n="goodVent">양호</option><option value="2" selected data-i18n="normalVent">보통</option><option value="3" data-i18n="poorVent">미흡</option></select></div>
-            <div class="form-row"><label data-i18n="workDesc">작업내용</label><textarea id="workDesc">세정 작업</textarea></div>
+
+            <div class="form-row">
+              <label data-i18n="chemSearch">화학물질명 / CAS</label>
+              <div>
+                <input id="searchKeyword" list="chemicalSuggestions" placeholder="아세톤 또는 67-64-1" autocomplete="off" />
+                <datalist id="chemicalSuggestions"></datalist>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label data-i18n="chemName">화학물질명</label>
+              <input id="chemName" />
+            </div>
+
+            <div class="form-row">
+              <label>CAS</label>
+              <input id="casNo" />
+            </div>
+
+            <div class="form-row">
+              <label data-i18n="sdsUpload">SDS PDF</label>
+              <div>
+                <input id="sdsFile" type="file" accept="application/pdf" />
+                <div id="pdfStatus" class="small muted" style="margin-top:6px">-</div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label data-i18n="amount">취급량</label>
+              <select id="amountLevel">
+                <option value="1" data-i18n="smallAmount">소량</option>
+                <option value="2" selected data-i18n="mediumAmount">중간</option>
+                <option value="3" data-i18n="largeAmount">대량</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label data-i18n="frequency">작업 빈도</label>
+              <select id="frequencyLevel">
+                <option value="1" data-i18n="lowFreq">가끔</option>
+                <option value="2" selected data-i18n="midFreq">주기적</option>
+                <option value="3" data-i18n="highFreq">상시</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label data-i18n="ventilation">환기 상태</label>
+              <select id="ventilationLevel">
+                <option value="1" data-i18n="goodVent">양호</option>
+                <option value="2" selected data-i18n="normalVent">보통</option>
+                <option value="3" data-i18n="poorVent">미흡</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label data-i18n="workTime">작업시간</label>
+              <select id="workTimeLevel">
+                <option value="1" data-i18n="time1">1시간 미만</option>
+                <option value="2" selected data-i18n="time2">1~4시간</option>
+                <option value="3" data-i18n="time3">4시간 이상</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label data-i18n="workDesc">작업내용</label>
+              <textarea id="workDesc">세정 작업</textarea>
+            </div>
           </div>
+
           <div class="result-card">
             <h2 data-i18n="resultPanel">자동 분석 결과</h2>
             <div class="stack">
-              <div class="result-box"><strong data-i18n="ghsClass">GHS 분류</strong><div id="ghsBox" class="muted" style="margin-top:8px">-</div></div>
-              <div class="result-box"><strong data-i18n="exposureRoute">노출 경로</strong><div id="exposureBox" class="muted" style="margin-top:8px">-</div></div>
-              <div class="result-box"><strong data-i18n="ppeReq">필요 보호구</strong><div id="ppeBox" class="muted" style="margin-top:8px">-</div></div>
-              <div class="result-box"><strong data-i18n="storageReq">보관 / 취급 조건</strong><div id="storageBox" class="muted" style="margin-top:8px">-</div></div>
-              <div class="result-box"><strong data-i18n="riskCalc">위험도 계산 결과</strong><div id="riskBox" style="margin-top:8px">-</div><div id="scoreBox" class="small muted" style="margin-top:4px"></div></div>
-              <div class="result-box"><strong data-i18n="controlSuggest">권장 위험저감조치</strong><ul id="controlBox" class="list"></ul></div>
+              <div class="result-box">
+                <strong data-i18n="ghsClass">GHS 분류</strong>
+                <div id="ghsBox" class="muted" style="margin-top:8px">-</div>
+              </div>
+
+              <div class="result-box">
+                <strong data-i18n="exposureRoute">노출 경로</strong>
+                <div id="exposureBox" class="muted" style="margin-top:8px">-</div>
+              </div>
+
+              <div class="result-box">
+                <strong data-i18n="ppeReq">필요 보호구</strong>
+                <div id="ppeBox" class="muted" style="margin-top:8px">-</div>
+              </div>
+
+              <div class="result-box">
+                <strong data-i18n="storageReq">보관 / 취급 조건</strong>
+                <div id="storageBox" class="muted" style="margin-top:8px">-</div>
+              </div>
+
+              <div class="result-box">
+                <strong data-i18n="riskCalc">위험도 계산 결과</strong>
+                <div id="riskBox" style="margin-top:8px">-</div>
+                <div id="scoreBox" class="small muted" style="margin-top:4px"></div>
+              </div>
+
+              <div class="result-box">
+                <strong data-i18n="controlSuggest">권장 위험저감조치</strong>
+                <ul id="controlBox" class="list"></ul>
+              </div>
             </div>
           </div>
         </div>
@@ -178,12 +438,15 @@
           <button onclick="fillDemoReport1()" data-i18n="fillDemo">샘플 데이터 채우기</button>
           <button onclick="clearReport1()" data-i18n="clearAll">전체 초기화</button>
         </div>
+
         <div class="sheet-wrap" id="pdfArea">
           <table class="sheet">
             <colgroup>
               <col style="width:82px"><col style="width:62px"><col style="width:115px"><col style="width:92px"><col style="width:270px"><col style="width:115px"><col style="width:115px"><col style="width:115px">
             </colgroup>
+
             <tr><th colspan="8" class="title" data-i18n="reportTitle">리스크 어세스먼트 실시 보고서</th></tr>
+
             <tr>
               <td colspan="3" class="label" data-i18n="siteName">사업장명</td>
               <td colspan="3" class="label" style="text-align:center" data-i18n="assessDate">리스크 어세스먼트 실시일</td>
@@ -194,6 +457,7 @@
               <td colspan="3"><input id="r1-date" /></td>
               <td colspan="2"><input id="r1-next" /></td>
             </tr>
+
             <tr>
               <td colspan="4" class="label" data-i18n="managerName">리스크 어세스먼트 실시 책임자 성명</td>
               <td colspan="4" class="label" data-i18n="staffName">리스크 어세스먼트 실시 담당자 성명</td>
@@ -202,8 +466,10 @@
               <td colspan="4"><input id="r1-manager" /></td>
               <td colspan="4"><input id="r1-staff" /></td>
             </tr>
+
             <tr><td colspan="8" class="label" data-i18n="workTitle">1. 리스크 어세스먼트를 실시한 작업 (화학물질·제품을 사용한 작업)</td></tr>
             <tr><td colspan="8"><input id="r1-work" /></td></tr>
+
             <tr><td colspan="8" class="label" data-i18n="materialTitle">2. 리스크 어세스먼트를 실시한 화학물질명 (또는 제품명)</td></tr>
             <tr>
               <td colspan="2" class="subhead" data-i18n="materialCol">구분</td>
@@ -214,6 +480,7 @@
             <tr><td colspan="2" class="blue" data-i18n="mat2">물질 ②</td><td colspan="4"><input id="m2-name" /></td><td colspan="2"><input id="m2-cas" /></td></tr>
             <tr><td colspan="2" class="blue" data-i18n="mat3">물질 ③</td><td colspan="4"><input id="m3-name" /></td><td colspan="2"><input id="m3-cas" /></td></tr>
             <tr><td colspan="2" class="blue" data-i18n="mat4">물질 ④</td><td colspan="4"><input id="m4-name" /></td><td colspan="2"><input id="m4-cas" /></td></tr>
+
             <tr><td colspan="8" class="label" data-i18n="resultTitle">3. 리스크 어세스먼트 결과</td></tr>
             <tbody id="report1Body"></tbody>
           </table>
@@ -224,24 +491,30 @@
         <div class="toolbar">
           <button onclick="fillDemoReport2()" data-i18n="fillDemo">샘플 데이터 채우기</button>
         </div>
+
         <div class="sheet-wrap">
           <table class="sheet">
             <colgroup>
               <col style="width:80px"><col style="width:90px"><col style="width:240px"><col style="width:90px"><col style="width:240px"><col style="width:110px"><col style="width:90px"><col style="width:90px">
             </colgroup>
+
             <tr><th colspan="8" class="title" data-i18n="reportTitle">리스크 어세스먼트 실시 보고서</th></tr>
             <tr><td colspan="3" class="label" data-i18n="siteName">사업장명</td><td colspan="3" class="label" style="text-align:center" data-i18n="assessDate">리스크 어세스먼트 실시일</td><td colspan="2" class="label" style="text-align:center" data-i18n="nextDate">차기 예정일</td></tr>
             <tr><td colspan="3"><input id="r2-site"></td><td colspan="3"><input id="r2-date"></td><td colspan="2"><input id="r2-next"></td></tr>
+
             <tr><td colspan="4" class="label" data-i18n="managerName">리스크 어세스먼트 실시 책임자 성명</td><td colspan="4" class="label" data-i18n="staffName">리스크 어세스먼트 실시 담당자 성명</td></tr>
             <tr><td colspan="4"><input id="r2-manager"></td><td colspan="4"><input id="r2-staff"></td></tr>
+
             <tr><td colspan="8" class="label" data-i18n="workTitle">1. 리스크 어세스먼트를 실시한 작업 (화학물질·제품을 사용한 작업)</td></tr>
             <tr><td colspan="8"><input id="r2-work"></td></tr>
+
             <tr><td colspan="8" class="label" data-i18n="materialTitle">2. 리스크 어세스먼트를 실시한 화학물질명 (또는 제품명)</td></tr>
             <tr><td colspan="2" class="subhead" data-i18n="materialCol">구분</td><td colspan="4" class="subhead" data-i18n="name">명칭</td><td colspan="2" class="subhead">CAS <span data-i18n="number">번호</span></td></tr>
             <tr><td colspan="2" class="blue" data-i18n="mat1">물질 ①</td><td colspan="4"><input id="r2m1-name"></td><td colspan="2"><input id="r2m1-cas"></td></tr>
             <tr><td colspan="2" class="blue" data-i18n="mat2">물질 ②</td><td colspan="4"><input id="r2m2-name"></td><td colspan="2"><input id="r2m2-cas"></td></tr>
             <tr><td colspan="2" class="blue" data-i18n="mat3">물질 ③</td><td colspan="4"><input id="r2m3-name"></td><td colspan="2"><input id="r2m3-cas"></td></tr>
             <tr><td colspan="2" class="blue" data-i18n="mat4">물질 ④</td><td colspan="4"><input id="r2m4-name"></td><td colspan="2"><input id="r2m4-cas"></td></tr>
+
             <tr><td colspan="8" class="label" data-i18n="resultTitle">3. 리스크 어세스먼트 결과</td></tr>
             <tr><td class="subhead2"></td><td colspan="3" class="subhead" data-i18n="harmfulness">유해성</td><td colspan="4" class="subhead" data-i18n="danger">위험성</td></tr>
             <tr><td class="subhead2"></td><td class="subhead2" data-i18n="method">평가 방법</td><td colspan="2" class="subhead2" data-i18n="riskLevel">위험 수준</td><td class="subhead2" data-i18n="method">평가 방법</td><td colspan="3" class="subhead2" data-i18n="riskLevel">위험 수준</td></tr>
@@ -249,8 +522,21 @@
             <tr><td class="blue" data-i18n="mat2">물질 ②</td><td><input></td><td colspan="2"><textarea></textarea></td><td><input></td><td colspan="3"><textarea></textarea></td></tr>
             <tr><td class="blue" data-i18n="mat3">물질 ③</td><td><input></td><td colspan="2"><textarea></textarea></td><td><input></td><td colspan="3"><textarea></textarea></td></tr>
             <tr><td class="blue" data-i18n="mat4">물질 ④</td><td><input></td><td colspan="2"><textarea></textarea></td><td><input></td><td colspan="3"><textarea></textarea></td></tr>
+
             <tr><td colspan="5" class="subhead" data-i18n="riskReductionContent">리스크 저감조치 내용</td><td class="subhead" data-i18n="status">대응상황</td><td class="subhead" data-i18n="dueDate">실시기한</td><td class="subhead" data-i18n="doneDate">완료일</td></tr>
-            <tr><td colspan="5"><textarea id="r2-control" style="min-height:140px"></textarea></td><td><div class="checks"><label><input type="radio" name="r2status"> <span data-i18n="doAction">대응한다</span></label><label><input type="radio" name="r2status"> <span data-i18n="hold">보류</span></label><label><input type="radio" name="r2status"> <span data-i18n="maintain">현상 유지</span></label></div></td><td><input id="r2-due"></td><td><input id="r2-done"></td></tr>
+            <tr>
+              <td colspan="5"><textarea id="r2-control" style="min-height:140px"></textarea></td>
+              <td>
+                <div class="checks">
+                  <label><input type="radio" name="r2status"> <span data-i18n="doAction">대응한다</span></label>
+                  <label><input type="radio" name="r2status"> <span data-i18n="hold">보류</span></label>
+                  <label><input type="radio" name="r2status"> <span data-i18n="maintain">현상 유지</span></label>
+                </div>
+              </td>
+              <td><input id="r2-due"></td>
+              <td><input id="r2-done"></td>
+            </tr>
+
             <tr><td colspan="8" class="subhead" data-i18n="other">기타</td></tr>
             <tr><td colspan="8"><textarea style="min-height:120px"></textarea></td></tr>
           </table>
@@ -261,11 +547,13 @@
         <div class="toolbar">
           <button onclick="fillDemoSummary()" data-i18n="fillDemo">샘플 데이터 채우기</button>
         </div>
+
         <div class="sheet-wrap">
           <table class="sheet">
             <colgroup>
               <col style="width:90px"><col style="width:85px"><col style="width:85px"><col style="width:90px"><col style="width:100px"><col style="width:140px"><col style="width:90px"><col style="width:80px"><col style="width:75px"><col style="width:90px"><col style="width:180px"><col style="width:160px"><col style="width:80px"><col style="width:85px"><col style="width:90px"><col style="width:180px"><col style="width:160px"><col style="width:80px"><col style="width:85px"><col style="width:90px"><col style="width:130px">
             </colgroup>
+
             <tr><th colspan="21" class="title" data-i18n="summaryTitle">리스크 어세스먼트 결과 기입 시트 (일람)</th></tr>
             <tr>
               <th rowspan="3" class="subhead" data-i18n="siteName">사업장명</th>
@@ -297,307 +585,731 @@
   </div>
 
 <script>
-const DB = [
-  {name_ko:'아세톤',name_ja:'アセトン',name_en:'Acetone',name_vi:'Acetone',cas:'67-64-1',ghs:['인화성','눈 자극','졸림/어지러움'],exposure:['흡입','피부 접촉','눈'],ppe:['보호안경','내화학 장갑','국소배기'],storage:['화기 엄금','정전기 방지','밀폐 보관'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:3,dangerWeight:3},
-  {name_ko:'톨루엔',name_ja:'トルエン',name_en:'Toluene',name_vi:'Toluen',cas:'108-88-3',ghs:['인화성','중추신경계 영향','생식독성 의심'],exposure:['흡입','피부'],ppe:['유기용제용 방독마스크','보호장갑','보호안경'],storage:['환기 유지','점화원 격리'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:4,dangerWeight:4},
-  {name_ko:'메탄올',name_ja:'メタノール',name_en:'Methanol',name_vi:'Methanol',cas:'67-56-1',ghs:['고독성','인화성','장기손상'],exposure:['흡입','피부','섭취'],ppe:['방독마스크','보호안경','내화학 장갑'],storage:['밀폐 보관','화기 엄금'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:5,dangerWeight:4},
-  {name_ko:'이소프로필알코올',name_ja:'イソプロピルアルコール',name_en:'Isopropyl Alcohol',name_vi:'Cồn IPA',cas:'67-63-0',ghs:['인화성','눈 자극'],exposure:['흡입','피부'],ppe:['보호장갑','보호안경','환기'],storage:['밀폐 보관','점화원 차단'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:3,dangerWeight:3},
-  {name_ko:'벤젠',name_ja:'ベンゼン',name_en:'Benzene',name_vi:'Benzen',cas:'71-43-2',ghs:['발암성','인화성','혈액계 영향'],exposure:['흡입','피부'],ppe:['유기용제용 방독마스크','장갑','보호복'],storage:['밀폐 공정','누출 방지'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:5,dangerWeight:4},
-  {name_ko:'포름알데히드',name_ja:'ホルムアルデヒド',name_en:'Formaldehyde',name_vi:'Formaldehyde',cas:'50-00-0',ghs:['발암성','피부 자극','흡입 자극'],exposure:['흡입','피부','눈'],ppe:['보호안경','내화학 장갑','국소배기'],storage:['환기 유지','밀폐 보관'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:5,dangerWeight:3},
-  {name_ko:'황산',name_ja:'硫酸',name_en:'Sulfuric Acid',name_vi:'Axit sulfuric',cas:'7664-93-9',ghs:['강부식성','중증 눈손상'],exposure:['피부','눈','흡입'],ppe:['보안면','내산 장갑','방수 앞치마'],storage:['산 전용 보관','염기와 격리'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:5,dangerWeight:3},
-  {name_ko:'염산',name_ja:'塩酸',name_en:'Hydrochloric Acid',name_vi:'Axit hydrochloric',cas:'7647-01-0',ghs:['부식성','흡입 자극'],exposure:['흡입','피부','눈'],ppe:['보호안경','내산 장갑','환기'],storage:['산 전용 보관'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:4,dangerWeight:3},
-  {name_ko:'암모니아',name_ja:'アンモニア',name_en:'Ammonia',name_vi:'Amoniac',cas:'7664-41-7',ghs:['독성','흡입 위험','부식성'],exposure:['흡입','눈'],ppe:['방독마스크','보호안경','장갑'],storage:['누출 감시','환기'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:5,dangerWeight:4},
-  {name_ko:'에탄올',name_ja:'エタノール',name_en:'Ethanol',name_vi:'Ethanol',cas:'64-17-5',ghs:['인화성'],exposure:['흡입','피부'],ppe:['환기','보호안경'],storage:['화기 엄금'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:2,dangerWeight:3},
-  {name_ko:'자일렌',name_ja:'キシレン',name_en:'Xylene',name_vi:'Xylen',cas:'1330-20-7',ghs:['인화성','흡입 유해'],exposure:['흡입','피부'],ppe:['방독마스크','장갑'],storage:['점화원 격리'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:4,dangerWeight:4},
-  {name_ko:'n-헥산',name_ja:'n-ヘキサン',name_en:'n-Hexane',name_vi:'n-Hexan',cas:'110-54-3',ghs:['인화성','신경독성'],exposure:['흡입','피부'],ppe:['방독마스크','장갑','환기'],storage:['화기 엄금'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:4,dangerWeight:4}
-];
+  const DEMO_DB = [
+    {name_ko:'아세톤',name_ja:'アセトン',name_en:'Acetone',cas:'67-64-1',ghs:['인화성','눈 자극','졸림/어지러움'],exposure:['흡입','피부 접촉','눈'],ppe:['보호안경','내화학 장갑','국소배기'],storage:['화기 엄금','정전기 방지','밀폐 보관'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:3,dangerWeight:3},
+    {name_ko:'톨루엔',name_ja:'トルエン',name_en:'Toluene',cas:'108-88-3',ghs:['인화성','중추신경계 영향','생식독성 의심'],exposure:['흡입','피부'],ppe:['유기용제용 방독마스크','보호장갑','보호안경'],storage:['환기 유지','점화원 격리'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:4,dangerWeight:4},
+    {name_ko:'메탄올',name_ja:'メタノール',name_en:'Methanol',cas:'67-56-1',ghs:['독성','인화성','장기손상'],exposure:['흡입','피부','섭취'],ppe:['방독마스크','보호안경','내화학 장갑'],storage:['밀폐 보관','화기 엄금'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:5,dangerWeight:4},
+    {name_ko:'이소프로필알코올',name_ja:'イソプロピルアルコール',name_en:'Isopropyl Alcohol',cas:'67-63-0',ghs:['인화성','눈 자극'],exposure:['흡입','피부'],ppe:['보호장갑','보호안경','환기'],storage:['밀폐 보관','점화원 차단'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:3,dangerWeight:3},
+    {name_ko:'벤젠',name_ja:'ベンゼン',name_en:'Benzene',cas:'71-43-2',ghs:['발암성','인화성','혈액계 영향'],exposure:['흡입','피부'],ppe:['유기용제용 방독마스크','장갑','보호복'],storage:['밀폐 공정','누출 방지'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:5,dangerWeight:4},
+    {name_ko:'포름알데히드',name_ja:'ホルムアルデヒド',name_en:'Formaldehyde',cas:'50-00-0',ghs:['발암성','피부 자극','흡입 자극'],exposure:['흡입','피부','눈'],ppe:['보호안경','내화학 장갑','국소배기'],storage:['환기 유지','밀폐 보관'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:5,dangerWeight:3},
+    {name_ko:'황산',name_ja:'硫酸',name_en:'Sulfuric Acid',cas:'7664-93-9',ghs:['강부식성','중증 눈손상'],exposure:['피부','눈','흡입'],ppe:['보안면','내산 장갑','방수 앞치마'],storage:['산 전용 보관','염기와 격리'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:5,dangerWeight:3},
+    {name_ko:'염산',name_ja:'塩酸',name_en:'Hydrochloric Acid',cas:'7647-01-0',ghs:['부식성','흡입 자극'],exposure:['흡입','피부','눈'],ppe:['보호안경','내산 장갑','환기'],storage:['산 전용 보관'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:4,dangerWeight:3},
+    {name_ko:'암모니아',name_ja:'アンモニア',name_en:'Ammonia',cas:'7664-41-7',ghs:['독성','흡입 위험','부식성'],exposure:['흡입','눈'],ppe:['방독마스크','보호안경','장갑'],storage:['누출 감시','환기'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:5,dangerWeight:4},
+    {name_ko:'에탄올',name_ja:'エタノール',name_en:'Ethanol',cas:'64-17-5',ghs:['인화성'],exposure:['흡입','피부'],ppe:['환기','보호안경'],storage:['화기 엄금'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:2,dangerWeight:3},
+    {name_ko:'자일렌',name_ja:'キシレン',name_en:'Xylene',cas:'1330-20-7',ghs:['인화성','흡입 유해'],exposure:['흡입','피부'],ppe:['방독마스크','장갑'],storage:['점화원 격리'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:4,dangerWeight:4},
+    {name_ko:'n-헥산',name_ja:'n-ヘキサン',name_en:'n-Hexane',cas:'110-54-3',ghs:['인화성','신경독성'],exposure:['흡입','피부'],ppe:['방독마스크','장갑','환기'],storage:['화기 엄금'],hazardMethod:'컨트롤 밴딩',dangerMethod:'위험성 스크리닝 도구',hazardWeight:4,dangerWeight:4}
+  ];
 
-const DICT = {
-  ko:{brand:'화학물질 위험성평가 스튜디오',brandSub:'별도 사이트형 · 다국어 · SDS 자동분석 · PDF 보고서',pdfBtn:'PDF 보고서 저장',tabHome:'대시보드',tabAnalyzer:'SDS 자동 분석',tabReport1:'실시보고서 ①',tabReport2:'실시보고서 ②',tabSummary:'결과 일람',homeTitle:'별도 사이트 구조로 바로 확장 가능한 화학물질 위험성평가 웹',homeDesc:'이 버전은 대표님이 요청한 핵심 기능을 한 화면에 넣은 베이스입니다. 화학물질 DB 검색, SDS 위험성 자동 분석, 위험도 점수 계산, 다국어 전환, PDF 보고서 출력까지 바로 테스트할 수 있습니다.',f1:'1. 화학물질 자동 DB',f1d:'이름 또는 CAS 번호로 검색하고 자동으로 물질 정보를 채웁니다.',f2:'2. SDS 자동 분석 엔진',f2d:'GHS 분류, 노출경로, PPE, 저장조건, 권장조치를 자동으로 제안합니다.',f3:'3. 위험도 AI 계산',f3d:'유해성·위험성·취급량·환기·빈도를 합산하여 위험레벨을 계산합니다.',f4:'4. PDF 보고서 자동 생성',f4d:'입력된 내용을 그대로 PDF로 저장할 수 있습니다.',f5:'5. 다국어 지원',f5d:'한국어, 일본어, 영어, 베트남어 전환이 가능합니다.',f6:'6. 별도 사이트 배포형',f6d:'chemical-risk 전용 사이트로 GitHub Pages 또는 Firebase Hosting에 배포하기 좋습니다.',quickAction:'빠른 실행',goAnalyze:'SDS 자동 분석 시작',fillDemo:'샘플 데이터 채우기',clearAll:'전체 초기화',siteType:'별도 사이트형',dbStatus:'DB 엔진 포함',langStatus:'4개국어 포함',homeNote:'현재 코드에는 데모용 내장 DB가 들어 있습니다. 실제 운영 시에는 chemical-db.json 파일로 분리해 500개 이상으로 확장하면 됩니다.',analyzeBtn:'자동 분석',applyToReport:'결과를 보고서①에 반영',inputPanel:'입력 패널',resultPanel:'자동 분석 결과',chemSearch:'화학물질명 / CAS',chemName:'화학물질명',amount:'취급량',smallAmount:'소량',mediumAmount:'중간',largeAmount:'대량',frequency:'작업 빈도',lowFreq:'가끔',midFreq:'주기적',highFreq:'상시',ventilation:'환기 상태',goodVent:'양호',normalVent:'보통',poorVent:'미흡',workDesc:'작업내용',ghsClass:'GHS 분류',exposureRoute:'노출 경로',ppeReq:'필요 보호구',storageReq:'보관 / 취급 조건',riskCalc:'위험도 계산 결과',controlSuggest:'권장 위험저감조치',reportTitle:'리스크 어세스먼트 실시 보고서',siteName:'사업장명',assessDate:'리스크 어세스먼트 실시일',nextDate:'차기 예정일',managerName:'리스크 어세스먼트 실시 책임자 성명',staffName:'리스크 어세스먼트 실시 담당자 성명',workTitle:'1. 리스크 어세스먼트를 실시한 작업 (화학물질·제품을 사용한 작업)',materialTitle:'2. 리스크 어세스먼트를 실시한 화학물질명 (또는 제품명)',materialCol:'구분',name:'명칭',number:'번호',resultTitle:'3. 리스크 어세스먼트 결과',mat1:'물질 ①',mat2:'물질 ②',mat3:'물질 ③',mat4:'물질 ④',harmfulness:'유해성',danger:'위험성',method:'평가 방법',riskLevel:'위험 수준',content:'내용',status:'대응상황',dueDate:'실시기한',doneDate:'완료일',remark:'비고',riskReduction:'리스크 저감조치',doAction:'대응한다',hold:'보류',maintain:'현상 유지',riskReductionContent:'리스크 저감조치 내용',other:'기타',summaryTitle:'리스크 어세스먼트 결과 기입 시트 (일람)',managerShort:'실시책임자',staffShort:'실시담당자',assessDateShort:'실시일',nextDateShort:'차기예정일',workContent:'작업내용',chemMaterial:'실시 화학물질',productName:'제품명',materialName:'물질명',notFound:'DB에서 일치하는 화학물질을 찾지 못했습니다.',scoreLabel:'계산 점수',riskLow:'리스크 레벨 2',riskMid:'리스크 레벨 3',riskHigh:'리스크 레벨 4',riskVeryHigh:'리스크 레벨 5'},
-  ja:{brand:'化学物質リスクアセスメントスタジオ',brandSub:'独立サイト型 · 多言語 · SDS自動分析 · PDFレポート',pdfBtn:'PDFレポート保存',tabHome:'ダッシュボード',tabAnalyzer:'SDS自動分析',tabReport1:'実施レポート①',tabReport2:'実施レポート②',tabSummary:'結果一覧',homeTitle:'独立サイトとしてすぐ拡張できる化学物質リスクアセスメントWeb',homeDesc:'このバージョンは、代表님が求めた主要機能を1つにまとめたベースです。化学物質DB検索、SDS危険性自動分析、危険度計算、多言語切替、PDF出力までそのまま試せます。',f1:'1. 化学物質自動DB',f1d:'名称またはCAS番号で検索し、自動入力します。',f2:'2. SDS自動分析エンジン',f2d:'GHS分類、ばく露経路、PPE、保管条件、推奨対策を自動提案します。',f3:'3. 危険度AI計算',f3d:'有害性・危険性・取扱量・換気・頻度を合算して危険レベルを計算します。',f4:'4. PDFレポート自動生成',f4d:'入力内容をそのままPDFで保存できます。',f5:'5. 多言語対応',f5d:'韓国語、日本語、英語、ベトナム語に対応します。',f6:'6. 独立サイト配布型',f6d:'chemical-risk専用サイトとしてGitHub PagesやFirebase Hostingに向いています。',quickAction:'クイック操作',goAnalyze:'SDS自動分析を開始',fillDemo:'サンプル入力',clearAll:'全体初期化',siteType:'独立サイト型',dbStatus:'DBエンジン搭載',langStatus:'4言語対応',homeNote:'現在はデモ用の内蔵DBです。実運用では chemical-db.json に分離して500件以上へ拡張してください。',analyzeBtn:'自動分析',applyToReport:'結果をレポート①へ反映',inputPanel:'入力パネル',resultPanel:'自動分析結果',chemSearch:'化学物質名 / CAS',chemName:'化学物質名',amount:'取扱量',smallAmount:'少量',mediumAmount:'中量',largeAmount:'大量',frequency:'作業頻度',lowFreq:'ときどき',midFreq:'定期的',highFreq:'常時',ventilation:'換気状態',goodVent:'良好',normalVent:'普通',poorVent:'不十分',workDesc:'作業内容',ghsClass:'GHS分類',exposureRoute:'ばく露経路',ppeReq:'必要保護具',storageReq:'保管 / 取扱条件',riskCalc:'危険度計算結果',controlSuggest:'推奨リスク低減措置',reportTitle:'リスクアセスメント実施レポート',siteName:'事業場名',assessDate:'リスクアセスメント実施日',nextDate:'次回予定日',managerName:'リスクアセスメント実施責任者氏名',staffName:'リスクアセスメント実施担当者氏名',workTitle:'1. リスクアセスメントを実施した作業（化学物質・製品を用いた作業）',materialTitle:'2. リスクアセスメントを実施した化学物質名（または製品名）',materialCol:'区分',name:'名称',number:'番号',resultTitle:'3. リスクアセスメント結果',mat1:'物質①',mat2:'物質②',mat3:'物質③',mat4:'物質④',harmfulness:'有害性',danger:'危険性',method:'手法',riskLevel:'リスクの程度',content:'内容',status:'対応状況',dueDate:'実施期限',doneDate:'完了日',remark:'備考',riskReduction:'リスク低減措置',doAction:'対応する',hold:'保留',maintain:'現状維持',riskReductionContent:'リスク低減措置内容',other:'その他',summaryTitle:'リスクアセスメント結果記入シート（一覧）',managerShort:'実施責任者',staffShort:'実施担当者',assessDateShort:'実施日',nextDateShort:'次回予定日',workContent:'作業内容',chemMaterial:'実施化学物質',productName:'製品名',materialName:'物質名',notFound:'DBで一致する化学物質が見つかりませんでした。',scoreLabel:'計算スコア',riskLow:'リスクレベル2',riskMid:'リスクレベル3',riskHigh:'リスクレベル4',riskVeryHigh:'リスクレベル5'},
-  en:{brand:'Chemical Risk Assessment Studio',brandSub:'Dedicated site · Multilingual · SDS auto analysis · PDF report',pdfBtn:'Save PDF Report',tabHome:'Dashboard',tabAnalyzer:'SDS Analyzer',tabReport1:'Report ①',tabReport2:'Report ②',tabSummary:'Summary',homeTitle:'A chemical risk assessment web app ready for a dedicated standalone site',homeDesc:'This version bundles the core features you requested into one base app: chemical DB search, SDS auto analysis, risk score calculation, multilingual switching, and PDF export.',f1:'1. Chemical Auto DB',f1d:'Search by name or CAS number and auto-fill the material information.',f2:'2. SDS Auto Analysis Engine',f2d:'Suggests GHS classes, exposure routes, PPE, storage conditions, and recommended controls.',f3:'3. Risk AI Calculation',f3d:'Calculates a risk level from hazard, danger, quantity, ventilation, and frequency.',f4:'4. PDF Report Generator',f4d:'Exports the current input as a PDF report.',f5:'5. Multilingual',f5d:'Supports Korean, Japanese, English, and Vietnamese.',f6:'6. Standalone Site Ready',f6d:'Well-suited for a dedicated chemical-risk site on GitHub Pages or Firebase Hosting.',quickAction:'Quick Actions',goAnalyze:'Start SDS Analysis',fillDemo:'Fill Demo Data',clearAll:'Clear All',siteType:'Standalone site',dbStatus:'DB engine included',langStatus:'4 languages',homeNote:'This code currently contains a demo built-in DB. For production, split it into a chemical-db.json file and extend it to 500+ entries.',analyzeBtn:'Analyze',applyToReport:'Apply Result to Report ①',inputPanel:'Input Panel',resultPanel:'Auto Analysis Result',chemSearch:'Chemical Name / CAS',chemName:'Chemical Name',amount:'Amount',smallAmount:'Small',mediumAmount:'Medium',largeAmount:'Large',frequency:'Frequency',lowFreq:'Occasional',midFreq:'Regular',highFreq:'Constant',ventilation:'Ventilation',goodVent:'Good',normalVent:'Normal',poorVent:'Poor',workDesc:'Work Description',ghsClass:'GHS Classification',exposureRoute:'Exposure Route',ppeReq:'Required PPE',storageReq:'Storage / Handling Conditions',riskCalc:'Risk Calculation Result',controlSuggest:'Recommended Control Measures',reportTitle:'Risk Assessment Report',siteName:'Workplace',assessDate:'Assessment Date',nextDate:'Next Planned Date',managerName:'Responsible Manager',staffName:'Assigned Staff',workTitle:'1. Work assessed (work using chemicals / products)',materialTitle:'2. Chemicals assessed (or product names)',materialCol:'Type',name:'Name',number:'No.',resultTitle:'3. Risk Assessment Result',mat1:'Material 1',mat2:'Material 2',mat3:'Material 3',mat4:'Material 4',harmfulness:'Harmfulness',danger:'Danger',method:'Method',riskLevel:'Risk Level',content:'Content',status:'Status',dueDate:'Due Date',doneDate:'Completion Date',remark:'Remark',riskReduction:'Risk Reduction Measure',doAction:'Take action',hold:'Hold',maintain:'Maintain current state',riskReductionContent:'Risk Reduction Measures',other:'Other',summaryTitle:'Risk Assessment Result Sheet (Summary)',managerShort:'Manager',staffShort:'Staff',assessDateShort:'Date',nextDateShort:'Next Date',workContent:'Work',chemMaterial:'Assessed Chemicals',productName:'Product',materialName:'Material',notFound:'No matching chemical was found in the database.',scoreLabel:'Score',riskLow:'Risk Level 2',riskMid:'Risk Level 3',riskHigh:'Risk Level 4',riskVeryHigh:'Risk Level 5'},
-  vi:{brand:'Studio đánh giá rủi ro hóa chất',brandSub:'Trang web riêng · Đa ngôn ngữ · Phân tích SDS tự động · Xuất PDF',pdfBtn:'Lưu báo cáo PDF',tabHome:'Bảng điều khiển',tabAnalyzer:'Phân tích SDS',tabReport1:'Biểu mẫu ①',tabReport2:'Biểu mẫu ②',tabSummary:'Tổng hợp',homeTitle:'Website đánh giá rủi ro hóa chất sẵn sàng triển khai thành trang riêng',homeDesc:'Phiên bản này gom các chức năng chính vào một nền tảng: tìm DB hóa chất, phân tích SDS tự động, tính điểm rủi ro, đổi ngôn ngữ và xuất PDF.',f1:'1. DB hóa chất tự động',f1d:'Tìm theo tên hoặc số CAS và tự động điền thông tin.',f2:'2. Bộ máy phân tích SDS',f2d:'Tự động gợi ý phân loại GHS, đường phơi nhiễm, PPE, điều kiện lưu trữ và biện pháp kiểm soát.',f3:'3. Tính toán AI rủi ro',f3d:'Tính mức rủi ro từ độc hại, nguy hiểm, lượng dùng, thông gió và tần suất.',f4:'4. Tạo báo cáo PDF',f4d:'Xuất nội dung đã nhập thành PDF.',f5:'5. Đa ngôn ngữ',f5d:'Hỗ trợ tiếng Hàn, Nhật, Anh và Việt.',f6:'6. Sẵn sàng cho trang riêng',f6d:'Phù hợp để triển khai thành website chemical-risk độc lập.',quickAction:'Thao tác nhanh',goAnalyze:'Bắt đầu phân tích SDS',fillDemo:'Điền dữ liệu mẫu',clearAll:'Xóa toàn bộ',siteType:'Trang riêng',dbStatus:'Có bộ DB',langStatus:'4 ngôn ngữ',homeNote:'Hiện tại mã nguồn có DB demo tích hợp sẵn. Khi vận hành thật, hãy tách thành chemical-db.json và mở rộng lên hơn 500 chất.',analyzeBtn:'Phân tích',applyToReport:'Áp dụng vào biểu mẫu ①',inputPanel:'Bảng nhập',resultPanel:'Kết quả phân tích tự động',chemSearch:'Tên hóa chất / CAS',chemName:'Tên hóa chất',amount:'Lượng sử dụng',smallAmount:'Ít',mediumAmount:'Trung bình',largeAmount:'Nhiều',frequency:'Tần suất',lowFreq:'Thỉnh thoảng',midFreq:'Định kỳ',highFreq:'Thường xuyên',ventilation:'Thông gió',goodVent:'Tốt',normalVent:'Bình thường',poorVent:'Kém',workDesc:'Nội dung công việc',ghsClass:'Phân loại GHS',exposureRoute:'Đường phơi nhiễm',ppeReq:'PPE cần thiết',storageReq:'Điều kiện lưu trữ / xử lý',riskCalc:'Kết quả tính rủi ro',controlSuggest:'Biện pháp giảm rủi ro đề xuất',reportTitle:'Báo cáo đánh giá rủi ro',siteName:'Tên cơ sở',assessDate:'Ngày đánh giá',nextDate:'Ngày dự kiến tiếp theo',managerName:'Người chịu trách nhiệm',staffName:'Người phụ trách',workTitle:'1. Công việc được đánh giá (sử dụng hóa chất / sản phẩm)',materialTitle:'2. Tên hóa chất được đánh giá (hoặc tên sản phẩm)',materialCol:'Phân loại',name:'Tên',number:'Số',resultTitle:'3. Kết quả đánh giá rủi ro',mat1:'Chất 1',mat2:'Chất 2',mat3:'Chất 3',mat4:'Chất 4',harmfulness:'Độc hại',danger:'Nguy hiểm',method:'Phương pháp',riskLevel:'Mức rủi ro',content:'Nội dung',status:'Trạng thái',dueDate:'Hạn thực hiện',doneDate:'Ngày hoàn tất',remark:'Ghi chú',riskReduction:'Biện pháp giảm rủi ro',doAction:'Thực hiện',hold:'Tạm hoãn',maintain:'Giữ nguyên hiện trạng',riskReductionContent:'Nội dung biện pháp giảm rủi ro',other:'Khác',summaryTitle:'Bảng tổng hợp kết quả đánh giá rủi ro',managerShort:'Quản lý',staffShort:'Nhân sự',assessDateShort:'Ngày',nextDateShort:'Ngày kế tiếp',workContent:'Công việc',chemMaterial:'Hóa chất đánh giá',productName:'Sản phẩm',materialName:'Chất',notFound:'Không tìm thấy hóa chất phù hợp trong cơ sở dữ liệu.',scoreLabel:'Điểm',riskLow:'Mức rủi ro 2',riskMid:'Mức rủi ro 3',riskHigh:'Mức rủi ro 4',riskVeryHigh:'Mức rủi ro 5'}
-};
+  const DB = Array.isArray(window.CHEMICAL_DB) && window.CHEMICAL_DB.length ? window.CHEMICAL_DB : DEMO_DB;
 
-let currentLang = 'ko';
-let lastAnalysis = null;
-
-function setTab(id){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
-  document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active', s.id===id));
-}
-
-document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
-['ko','ja','en','vi'].forEach(lang=>document.getElementById(`lang-${lang}`).addEventListener('click',()=>setLang(lang)));
-
-function setLang(lang){
-  currentLang = lang;
-  document.documentElement.lang = lang;
-  document.querySelectorAll('[data-i18n]').forEach(el=>{
-    const key = el.dataset.i18n;
-    if(DICT[lang] && DICT[lang][key]) el.textContent = DICT[lang][key];
-  });
-  ['ko','ja','en','vi'].forEach(l=>document.getElementById(`lang-${l}`).classList.toggle('active', l===lang));
-  localStorage.setItem('chem-risk-lang', lang);
-  if(lastAnalysis) renderAnalysis(lastAnalysis);
-}
-
-function getChemicalName(item){
-  return item[`name_${currentLang}`] || item.name_ko;
-}
-
-function searchChemicalRecord(keyword){
-  const k = (keyword || '').trim().toLowerCase();
-  if(!k) return null;
-  return DB.find(item =>
-    item.cas === keyword.trim() ||
-    item.name_ko.toLowerCase().includes(k) ||
-    item.name_ja.toLowerCase().includes(k) ||
-    item.name_en.toLowerCase().includes(k) ||
-    item.name_vi.toLowerCase().includes(k)
-  ) || null;
-}
-
-function buildControls(item){
-  const controls = [];
-  if(item.ghs.some(v=>v.includes('인화성') || v.toLowerCase().includes('flamm'))) controls.push('점화원 차단 / 화기 엄금','정전기 방지','국소배기 또는 충분한 환기');
-  if(item.ghs.some(v=>v.includes('독성') || v.includes('발암') || v.toLowerCase().includes('tox'))) controls.push('밀폐 공정 우선 검토','유해물질 노출 최소화','보호구 착용 관리 강화');
-  if(item.ghs.some(v=>v.includes('부식') || v.includes('자극'))) controls.push('내화학 장갑 및 보안면 착용','비상세안설비 확보');
-  if(item.exposure.includes('흡입')) controls.push('작업장 환기상태 점검','국소배기장치 운영');
-  return [...new Set(controls)];
-}
-
-function calculateRiskScore(item){
-  const amount = Number(document.getElementById('amountLevel').value || 1);
-  const freq = Number(document.getElementById('frequencyLevel').value || 1);
-  const vent = Number(document.getElementById('ventilationLevel').value || 1);
-  const base = item.hazardWeight + item.dangerWeight;
-  const score = base + amount + freq + vent;
-  let levelKey = 'riskLow';
-  let cls = 'low';
-  if(score >= 14){ levelKey = 'riskVeryHigh'; cls='high'; }
-  else if(score >= 11){ levelKey = 'riskHigh'; cls='high'; }
-  else if(score >= 8){ levelKey = 'riskMid'; cls='mid'; }
-  return {score, level:DICT[currentLang][levelKey], className:cls};
-}
-
-function analyzeChemical(){
-  const keyword = document.getElementById('searchKeyword').value || document.getElementById('chemName').value || document.getElementById('casNo').value;
-  const item = searchChemicalRecord(keyword);
-  if(!item){
-    alert(DICT[currentLang].notFound);
-    return;
-  }
-  document.getElementById('chemName').value = getChemicalName(item);
-  document.getElementById('casNo').value = item.cas;
-  const risk = calculateRiskScore(item);
-  const data = {
-    item,
-    risk,
-    controls: buildControls(item),
-    work: document.getElementById('workDesc').value
+  const DICT = {
+    ko:{
+      brand:'화학물질 위험성평가 스튜디오',
+      brandSub:'별도 사이트형 · 한국어/일본어 · SDS 자동분석 · PDF 보고서',
+      pdfBtn:'PDF 보고서 저장',
+      tabHome:'대시보드',
+      tabAnalyzer:'SDS 자동 분석',
+      tabReport1:'실시보고서 ①',
+      tabReport2:'실시보고서 ②',
+      tabSummary:'결과 일람',
+      homeTitle:'별도 사이트 구조로 바로 확장 가능한 화학물질 위험성평가 웹',
+      homeDesc:'실제 화학물질 DB 검색, CAS 자동완성, SDS PDF 읽기, 위험도 계산, 보고서 반영, PDF 출력까지 한 화면에서 동작하는 운영형 버전입니다.',
+      f1:'1. 화학물질 자동 DB', f1d:'이름 또는 CAS 번호로 검색하고 자동으로 물질 정보를 채웁니다.',
+      f2:'2. SDS 자동 분석 엔진', f2d:'GHS 분류, 노출경로, PPE, 저장조건, 권장조치를 자동으로 제안합니다.',
+      f3:'3. 위험도 AI 계산', f3d:'유해성·위험성·취급량·환기·작업시간·빈도를 합산하여 위험레벨을 계산합니다.',
+      f4:'4. PDF 보고서 자동 생성', f4d:'입력된 내용을 그대로 PDF로 저장할 수 있습니다.',
+      f5:'5. 한국어 / 일본어', f5d:'한국어와 일본어만 전환되도록 구성했습니다.',
+      f6:'6. 실제 DB 연결형', f6d:'window.CHEMICAL_DB 외부 파일이 있으면 자동으로 연결하고, 없으면 데모 DB로 동작합니다.',
+      quickAction:'빠른 실행',
+      goAnalyze:'SDS 자동 분석 시작',
+      fillDemo:'샘플 데이터 채우기',
+      clearAll:'전체 초기화',
+      siteType:'별도 사이트형',
+      analyzeBtn:'자동 분석',
+      applyToReport:'결과를 보고서①에 반영',
+      inputPanel:'입력 패널',
+      resultPanel:'자동 분석 결과',
+      chemSearch:'화학물질명 / CAS',
+      chemName:'화학물질명',
+      sdsUpload:'SDS PDF',
+      amount:'취급량',
+      smallAmount:'소량',
+      mediumAmount:'중간',
+      largeAmount:'대량',
+      frequency:'작업 빈도',
+      lowFreq:'가끔',
+      midFreq:'주기적',
+      highFreq:'상시',
+      ventilation:'환기 상태',
+      goodVent:'양호',
+      normalVent:'보통',
+      poorVent:'미흡',
+      workTime:'작업시간',
+      time1:'1시간 미만',
+      time2:'1~4시간',
+      time3:'4시간 이상',
+      workDesc:'작업내용',
+      ghsClass:'GHS 분류',
+      exposureRoute:'노출 경로',
+      ppeReq:'필요 보호구',
+      storageReq:'보관 / 취급 조건',
+      riskCalc:'위험도 계산 결과',
+      controlSuggest:'권장 위험저감조치',
+      reportTitle:'리스크 어세스먼트 실시 보고서',
+      siteName:'사업장명',
+      assessDate:'리스크 어세스먼트 실시일',
+      nextDate:'차기 예정일',
+      managerName:'리스크 어세스먼트 실시 책임자 성명',
+      staffName:'리스크 어세스먼트 실시 담당자 성명',
+      workTitle:'1. 리스크 어세스먼트를 실시한 작업 (화학물질·제품을 사용한 작업)',
+      materialTitle:'2. 리스크 어세스먼트를 실시한 화학물질명 (또는 제품명)',
+      materialCol:'구분',
+      name:'명칭',
+      number:'번호',
+      resultTitle:'3. 리스크 어세스먼트 결과',
+      mat1:'물질 ①',
+      mat2:'물질 ②',
+      mat3:'물질 ③',
+      mat4:'물질 ④',
+      harmfulness:'유해성',
+      danger:'위험성',
+      method:'평가 방법',
+      riskLevel:'위험 수준',
+      content:'내용',
+      status:'대응상황',
+      dueDate:'실시기한',
+      doneDate:'완료일',
+      remark:'비고',
+      riskReduction:'리스크 저감조치',
+      doAction:'대응한다',
+      hold:'보류',
+      maintain:'현상 유지',
+      riskReductionContent:'리스크 저감조치 내용',
+      other:'기타',
+      summaryTitle:'리스크 어세스먼트 결과 기입 시트 (일람)',
+      managerShort:'실시책임자',
+      staffShort:'실시담당자',
+      assessDateShort:'실시일',
+      nextDateShort:'차기예정일',
+      workContent:'작업내용',
+      chemMaterial:'실시 화학물질',
+      productName:'제품명',
+      materialName:'물질명',
+      notFound:'DB에서 일치하는 화학물질을 찾지 못했습니다.',
+      scoreLabel:'계산 점수',
+      riskLow:'리스크 레벨 2',
+      riskMid:'리스크 레벨 3',
+      riskHigh:'리스크 레벨 4',
+      riskVeryHigh:'리스크 레벨 5'
+    },
+    ja:{
+      brand:'化学物質リスクアセスメントスタジオ',
+      brandSub:'独立サイト型 · 韓国語/日本語 · SDS自動分析 · PDFレポート',
+      pdfBtn:'PDFレポート保存',
+      tabHome:'ダッシュボード',
+      tabAnalyzer:'SDS自動分析',
+      tabReport1:'実施レポート①',
+      tabReport2:'実施レポート②',
+      tabSummary:'結果一覧',
+      homeTitle:'独立サイトとしてすぐ拡張できる化学物質リスクアセスメントWeb',
+      homeDesc:'実際の化学物質DB検索、CAS自動補完、SDS PDF読込、危険度計算、レポート反映、PDF出力まで1画面で動作する運用型バージョンです。',
+      f1:'1. 化学物質自動DB', f1d:'名称またはCAS番号で検索し、自動入力します。',
+      f2:'2. SDS自動分析エンジン', f2d:'GHS分類、ばく露経路、PPE、保管条件、推奨対策を自動提案します。',
+      f3:'3. 危険度AI計算', f3d:'有害性・危険性・取扱量・換気・作業時間・頻度を合算して危険レベルを計算します。',
+      f4:'4. PDFレポート自動生成', f4d:'入力内容をそのままPDFで保存できます。',
+      f5:'5. 韓国語 / 日本語', f5d:'韓国語と日本語のみ切替します。',
+      f6:'6. 実DB連携型', f6d:'window.CHEMICAL_DB の外部ファイルがあれば自動接続し、なければデモDBで動作します。',
+      quickAction:'クイック操作',
+      goAnalyze:'SDS自動分析を開始',
+      fillDemo:'サンプル入力',
+      clearAll:'全体初期化',
+      siteType:'独立サイト型',
+      analyzeBtn:'自動分析',
+      applyToReport:'結果をレポート①へ反映',
+      inputPanel:'入力パネル',
+      resultPanel:'自動分析結果',
+      chemSearch:'化学物質名 / CAS',
+      chemName:'化学物質名',
+      sdsUpload:'SDS PDF',
+      amount:'取扱量',
+      smallAmount:'少量',
+      mediumAmount:'中量',
+      largeAmount:'大量',
+      frequency:'作業頻度',
+      lowFreq:'ときどき',
+      midFreq:'定期的',
+      highFreq:'常時',
+      ventilation:'換気状態',
+      goodVent:'良好',
+      normalVent:'普通',
+      poorVent:'不十分',
+      workTime:'作業時間',
+      time1:'1時間未満',
+      time2:'1～4時間',
+      time3:'4時間以上',
+      workDesc:'作業内容',
+      ghsClass:'GHS分類',
+      exposureRoute:'ばく露経路',
+      ppeReq:'必要保護具',
+      storageReq:'保管 / 取扱条件',
+      riskCalc:'危険度計算結果',
+      controlSuggest:'推奨リスク低減措置',
+      reportTitle:'リスクアセスメント実施レポート',
+      siteName:'事業場名',
+      assessDate:'リスクアセスメント実施日',
+      nextDate:'次回予定日',
+      managerName:'リスクアセスメント実施責任者氏名',
+      staffName:'リスクアセスメント実施担当者氏名',
+      workTitle:'1. リスクアセスメントを実施した作業（化学物質・製品を用いた作業）',
+      materialTitle:'2. リスクアセスメントを実施した化学物質名（または製品名）',
+      materialCol:'区分',
+      name:'名称',
+      number:'番号',
+      resultTitle:'3. リスクアセスメント結果',
+      mat1:'物質①',
+      mat2:'物質②',
+      mat3:'物質③',
+      mat4:'物質④',
+      harmfulness:'有害性',
+      danger:'危険性',
+      method:'手法',
+      riskLevel:'リスクの程度',
+      content:'内容',
+      status:'対応状況',
+      dueDate:'実施期限',
+      doneDate:'完了日',
+      remark:'備考',
+      riskReduction:'リスク低減措置',
+      doAction:'対応する',
+      hold:'保留',
+      maintain:'現状維持',
+      riskReductionContent:'リスク低減措置内容',
+      other:'その他',
+      summaryTitle:'リスクアセスメント結果記入シート（一覧）',
+      managerShort:'実施責任者',
+      staffShort:'実施担当者',
+      assessDateShort:'実施日',
+      nextDateShort:'次回予定日',
+      workContent:'作業内容',
+      chemMaterial:'実施化学物質',
+      productName:'製品名',
+      materialName:'物質名',
+      notFound:'DBで一致する化学物質が見つかりませんでした。',
+      scoreLabel:'計算スコア',
+      riskLow:'リスクレベル2',
+      riskMid:'リスクレベル3',
+      riskHigh:'リスクレベル4',
+      riskVeryHigh:'リスクレベル5'
+    }
   };
-  lastAnalysis = data;
-  renderAnalysis(data);
-}
 
-function renderAnalysis(data){
-  const {item,risk,controls} = data;
-  document.getElementById('ghsBox').textContent = item.ghs.join(', ');
-  document.getElementById('exposureBox').textContent = item.exposure.join(', ');
-  document.getElementById('ppeBox').textContent = item.ppe.join(', ');
-  document.getElementById('storageBox').textContent = item.storage.join(', ');
-  document.getElementById('riskBox').innerHTML = `<span class="pill ${risk.className}">${risk.level}</span>`;
-  document.getElementById('scoreBox').textContent = `${DICT[currentLang].scoreLabel}: ${risk.score}`;
-  document.getElementById('controlBox').innerHTML = controls.map(v=>`<li>${v}</li>`).join('');
-}
+  let currentLang = 'ko';
+  let lastAnalysis = null;
 
-function pushAnalysisToReport(){
-  if(!lastAnalysis){ analyzeChemical(); if(!lastAnalysis) return; }
-  const item = lastAnalysis.item;
-  document.getElementById('r1-work').value = document.getElementById('workDesc').value;
-  document.getElementById('m1-name').value = getChemicalName(item);
-  document.getElementById('m1-cas').value = item.cas;
-  document.getElementById('r2-work').value = document.getElementById('workDesc').value;
-  document.getElementById('r2m1-name').value = getChemicalName(item);
-  document.getElementById('r2m1-cas').value = item.cas;
-  document.getElementById('r2-hm1-method').value = item.hazardMethod;
-  document.getElementById('r2-hm1-level').value = lastAnalysis.risk.level + ' / ' + item.ghs.join(', ');
-  document.getElementById('r2-dm1-method').value = item.dangerMethod;
-  document.getElementById('r2-dm1-level').value = lastAnalysis.risk.level + ' / ' + item.storage.join(', ');
-  document.getElementById('r2-control').value = lastAnalysis.controls.join('\n');
-  setTab('report1');
-  fillMaterial1(lastAnalysis);
-}
+  function setTab(id){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
+    document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active', s.id===id));
+  }
 
-function fillMaterial1(data){
-  const item = data.item;
-  const controls = data.controls.join(', ');
-  document.getElementById('r1-h-method').value = item.hazardMethod;
-  document.getElementById('r1-h-risk').value = data.risk.level + ' / ' + item.ghs.join(', ');
-  document.getElementById('r1-h-content').value = controls;
-  document.getElementById('r1-h-due').value = new Date().toISOString().slice(0,10);
-  document.getElementById('r1-d-method').value = item.dangerMethod;
-  document.getElementById('r1-d-risk').value = data.risk.level + ' / ' + item.storage.join(', ');
-  document.getElementById('r1-d-content').value = controls;
-  document.getElementById('r1-d-due').value = new Date().toISOString().slice(0,10);
-}
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>setTab(btn.dataset.tab));
+  });
 
-function makeReport1Block(no){
-  const mat = ['①','②','③','④'][no-1];
-  return `
-  <tr>
-    <td rowspan="14" class="blue">${DICT[currentLang]['mat'+no] || '물질 '+mat}</td>
-    <td rowspan="7">${DICT[currentLang].harmfulness}</td>
-    <td>${DICT[currentLang].method}</td>
-    <td colspan="5"><input id="r${no===1?'1':''}${no===1?'':'-'}"></td><td></td>
-  </tr>`;
-}
+  ['ko','ja'].forEach(lang=>{
+    document.getElementById(`lang-${lang}`).addEventListener('click',()=>setLang(lang));
+  });
 
-function renderReport1(){
-  const labels = DICT[currentLang];
-  const body = document.getElementById('report1Body');
-  body.innerHTML = `
-  ${materialBlock('1','r1-h-method','r1-h-risk','r1-h-content','r1-h-due','r1-h-done','r1-h-remark','r1-d-method','r1-d-risk','r1-d-content','r1-d-due','r1-d-done','r1-d-remark')}
-  ${materialBlock('2','m2-h-method','m2-h-risk','m2-h-content','m2-h-due','m2-h-done','m2-h-remark','m2-d-method','m2-d-risk','m2-d-content','m2-d-due','m2-d-done','m2-d-remark')}
-  ${materialBlock('3','m3-h-method','m3-h-risk','m3-h-content','m3-h-due','m3-h-done','m3-h-remark','m3-d-method','m3-d-risk','m3-d-content','m3-d-due','m3-d-done','m3-d-remark')}
-  ${materialBlock('4','m4-h-method','m4-h-risk','m4-h-content','m4-h-due','m4-h-done','m4-h-remark','m4-d-method','m4-d-risk','m4-d-content','m4-d-due','m4-d-done','m4-d-remark')}`;
-}
+  function setLang(lang){
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const key = el.dataset.i18n;
+      if(DICT[lang] && DICT[lang][key]) el.textContent = DICT[lang][key];
+    });
+    ['ko','ja'].forEach(l=>{
+      document.getElementById(`lang-${l}`).classList.toggle('active', l===lang);
+    });
 
-function materialBlock(n, hm, hr, hc, hd, hdone, hrem, dm, dr, dc, dd, ddone, drem){
-  const t = DICT[currentLang];
-  return `
-  <tr>
-    <td rowspan="14" class="blue">${t['mat'+n]}</td>
-    <td rowspan="7">${t.harmfulness}</td>
-    <td>${t.method}</td>
-    <td colspan="4"><input id="${hm}"></td>
-    <td colspan="2"></td>
-  </tr>
-  <tr><td>${t.riskLevel}</td><td colspan="4"><textarea class="sm" id="${hr}"></textarea></td><td colspan="2"></td></tr>
-  <tr><td rowspan="5">${t.riskReduction}</td><td>${t.content}</td><td colspan="4"><textarea class="sm" id="${hc}"></textarea></td><td colspan="2"></td></tr>
-  <tr><td>${t.status}</td><td colspan="4"><div class="checks"><label><input type="checkbox"> ${t.doAction}</label><label><input type="checkbox"> ${t.hold}</label><label><input type="checkbox"> ${t.maintain}</label></div></td><td colspan="2"></td></tr>
-  <tr><td>${t.dueDate}</td><td colspan="4"><input id="${hd}"></td><td colspan="2"></td></tr>
-  <tr><td>${t.doneDate}</td><td colspan="4"><input id="${hdone}"></td><td colspan="2"></td></tr>
-  <tr><td>${t.remark}</td><td colspan="4"><textarea class="sm" id="${hrem}"></textarea></td><td colspan="2"></td></tr>
-  <tr>
-    <td rowspan="7">${t.danger}</td>
-    <td>${t.method}</td>
-    <td colspan="4"><input id="${dm}"></td>
-    <td colspan="2"></td>
-  </tr>
-  <tr><td>${t.riskLevel}</td><td colspan="4"><textarea class="sm" id="${dr}"></textarea></td><td colspan="2"></td></tr>
-  <tr><td rowspan="5">${t.riskReduction}</td><td>${t.content}</td><td colspan="4"><textarea class="sm" id="${dc}"></textarea></td><td colspan="2"></td></tr>
-  <tr><td>${t.status}</td><td colspan="4"><div class="checks"><label><input type="checkbox"> ${t.doAction}</label><label><input type="checkbox"> ${t.hold}</label><label><input type="checkbox"> ${t.maintain}</label></div></td><td colspan="2"></td></tr>
-  <tr><td>${t.dueDate}</td><td colspan="4"><input id="${dd}"></td><td colspan="2"></td></tr>
-  <tr><td>${t.doneDate}</td><td colspan="4"><input id="${ddone}"></td><td colspan="2"></td></tr>
-  <tr><td>${t.remark}</td><td colspan="4"><textarea class="sm" id="${drem}"></textarea></td><td colspan="2"></td></tr>`;
-}
+    localStorage.setItem('chem-risk-lang', lang);
 
-function renderSummary(){
-  const body = document.getElementById('summaryBody');
-  body.innerHTML = Array.from({length:6}).map((_,i)=>`
-    <tr>
-      <td><input value="${i===0?'AB 공장':''}"></td>
-      <td><input value="${i===0?'CCC':''}"></td>
-      <td><input value="${i===0?'DDD':''}"></td>
-      <td><input value="${i===0?'2026-03-11':''}"></td>
-      <td><input value="${i===0?'2026-09-11':''}"></td>
-      <td><textarea>${i===0?'세정 작업':''}</textarea></td>
-      <td><input value="${i===0?'세정제':''}"></td>
-      <td><input value="${i===0?'아세톤':''}"></td>
-      <td><input value="${i===0?'67-64-1':''}"></td>
-      <td><textarea>${i===0?'컨트롤 밴딩':''}</textarea></td>
-      <td><textarea>${i===0?'리스크 레벨 4 / 인화성, 눈 자극':''}</textarea></td>
-      <td><textarea>${i===0?'보호장갑, 국소배기, 화기 엄금':''}</textarea></td>
-      <td><input value="${i===0?'대응한다':''}"></td>
-      <td><input value="${i===0?'2026-04-30':''}"></td>
-      <td><textarea></textarea></td>
-      <td><textarea>${i===0?'위험성 스크리닝':''}</textarea></td>
-      <td><textarea>${i===0?'리스크 레벨 4 / 저장, 환기 관리':''}</textarea></td>
-      <td><textarea>${i===0?'점화원 차단, 정전기 방지':''}</textarea></td>
-      <td><input value="${i===0?'현상 유지':''}"></td>
-      <td><input value="${i===0?'2026-04-30':''}"></td>
-      <td><textarea></textarea></td>
-    </tr>`).join('');
-}
+    renderDbInfo();
+    renderReport1();
+    renderSummary();
 
-function fillAnalyzerDemo(){
-  document.getElementById('searchKeyword').value = '아세톤';
-  document.getElementById('workDesc').value = '세정 작업';
-  analyzeChemical();
-}
+    if(lastAnalysis) renderAnalysis(lastAnalysis);
+  }
 
-function fillDemoReport1(){
-  document.getElementById('r1-site').value = '동진건설 김해사이언스 현장';
-  document.getElementById('r1-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('r1-next').value = '2026-09-11';
-  document.getElementById('r1-manager').value = '김대홍';
-  document.getElementById('r1-staff').value = '안전관리자 홍길동';
-  document.getElementById('r1-work').value = '아세톤을 사용한 세정 작업';
-  document.getElementById('m1-name').value = '아세톤';
-  document.getElementById('m1-cas').value = '67-64-1';
-}
+  function renderDbInfo(){
+    const badge = document.getElementById('dbBadge');
+    const info = document.getElementById('dbInfo');
+    const isReal = Array.isArray(window.CHEMICAL_DB) && window.CHEMICAL_DB.length;
+    badge.textContent = isReal ? `DB ${DB.length}개 연결` : `데모 DB ${DB.length}개`;
+    info.textContent = isReal
+      ? `외부 화학물질 DB가 연결되었습니다. 총 ${DB.length}개 검색 가능`
+      : `외부 DB 파일이 없어 데모 DB로 동작 중입니다. chemical-db-800.js를 같은 폴더에 두면 자동 연결됩니다.`;
+  }
 
-function fillDemoReport2(){
-  document.getElementById('r2-site').value = '동진건설 김해사이언스 현장';
-  document.getElementById('r2-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('r2-next').value = '2026-09-11';
-  document.getElementById('r2-manager').value = '김대홍';
-  document.getElementById('r2-staff').value = '안전관리자 홍길동';
-  document.getElementById('r2-work').value = '아세톤을 사용한 세정 작업';
-  document.getElementById('r2m1-name').value = '아세톤';
-  document.getElementById('r2m1-cas').value = '67-64-1';
-  document.getElementById('r2-hm1-method').value = '컨트롤 밴딩';
-  document.getElementById('r2-hm1-level').value = '리스크 레벨 4 / 인화성, 눈 자극';
-  document.getElementById('r2-dm1-method').value = '위험성 스크리닝 도구';
-  document.getElementById('r2-dm1-level').value = '리스크 레벨 4 / 저장 및 취급 위험';
-  document.getElementById('r2-control').value = '점화원 차단\n정전기 방지\n국소배기 운영\n화학방호장갑 착용';
-  document.getElementById('r2-due').value = '2026-04-30';
-}
+  function getChemicalName(item){
+    return item[`name_${currentLang}`] || item.name_ko || item.name_ja || item.name_en || '';
+  }
 
-function fillDemoSummary(){ renderSummary(); }
+  function normalize(v){
+    return (v || '').toString().trim().toLowerCase();
+  }
 
-function fillDemoAll(){
-  fillAnalyzerDemo();
-  fillDemoReport1();
-  fillDemoReport2();
-  fillDemoSummary();
-  pushAnalysisToReport();
-}
+  function searchChemicalRecord(keyword){
+    const k = normalize(keyword);
+    if(!k) return null;
 
-function clearAllFields(){
-  document.querySelectorAll('input, textarea').forEach(el=>{ if(el.type!=='checkbox' && el.type!=='radio') el.value=''; });
-  document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(el=>el.checked=false);
-  document.getElementById('ghsBox').textContent='-';
-  document.getElementById('exposureBox').textContent='-';
-  document.getElementById('ppeBox').textContent='-';
-  document.getElementById('storageBox').textContent='-';
-  document.getElementById('riskBox').textContent='-';
-  document.getElementById('scoreBox').textContent='';
-  document.getElementById('controlBox').innerHTML='';
-  lastAnalysis = null;
-}
+    const casMatch = keyword.match(/\b\d{2,7}-\d{2}-\d\b/);
+    if(casMatch){
+      const exactCas = casMatch[0];
+      const byCas = DB.find(item => normalize(item.cas) === normalize(exactCas));
+      if(byCas) return byCas;
+    }
 
-function clearReport1(){
-  document.querySelectorAll('#report1 input, #report1 textarea').forEach(el=>el.value='');
-  document.querySelectorAll('#report1 input[type="checkbox"]').forEach(el=>el.checked=false);
-}
+    return DB.find(item =>
+      normalize(item.cas).includes(k) ||
+      normalize(item.name_ko).includes(k) ||
+      normalize(item.name_ja).includes(k) ||
+      normalize(item.name_en).includes(k)
+    ) || null;
+  }
 
-function downloadPDF(){
-  const target = document.getElementById('pdfArea') || document.body;
-  const opt = {margin:8, filename:'chemical-risk-report.pdf', image:{type:'jpeg', quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'mm', format:'a4', orientation:'portrait'}};
-  html2pdf().set(opt).from(target).save();
-}
+  function searchChemicalList(keyword){
+    const k = normalize(keyword);
+    if(!k) return [];
+    return DB.filter(item =>
+      normalize(item.cas).includes(k) ||
+      normalize(item.name_ko).includes(k) ||
+      normalize(item.name_ja).includes(k) ||
+      normalize(item.name_en).includes(k)
+    ).slice(0, 20);
+  }
 
-function init(){
-  renderReport1();
-  renderSummary();
-  const saved = localStorage.getItem('chem-risk-lang') || 'ko';
-  setLang(saved);
-}
+  function updateAutocomplete(){
+    const list = document.getElementById('chemicalSuggestions');
+    const q = document.getElementById('searchKeyword').value;
+    const matches = searchChemicalList(q);
+    list.innerHTML = matches.map(item =>
+      `<option value="${item.cas || getChemicalName(item)}">${getChemicalName(item)} / ${item.cas || '-'}</option>`
+    ).join('');
+  }
 
-init();
+  function buildControls(item){
+    const controls = [];
+    const ghs = item.ghs || [];
+    const exposure = item.exposure || [];
+
+    if(ghs.some(v=>/인화성|flamm/i.test(v))){
+      controls.push('점화원 차단 / 화기 엄금');
+      controls.push('정전기 방지');
+      controls.push('국소배기 또는 충분한 환기');
+    }
+
+    if(ghs.some(v=>/독성|발암|tox/i.test(v))){
+      controls.push('밀폐 공정 우선 검토');
+      controls.push('유해물질 노출 최소화');
+      controls.push('보호구 착용 관리 강화');
+    }
+
+    if(ghs.some(v=>/부식|자극|corros|irrit/i.test(v))){
+      controls.push('내화학 장갑 및 보안면 착용');
+      controls.push('비상세안설비 확보');
+    }
+
+    if(exposure.some(v=>/흡입|inhal/i.test(v))){
+      controls.push('작업장 환기상태 점검');
+      controls.push('국소배기장치 운영');
+    }
+
+    const workTimeLevel = Number(document.getElementById('workTimeLevel').value || 1);
+    if(workTimeLevel >= 3){
+      controls.push('작업시간 단축 또는 교대작업 검토');
+    }
+
+    return [...new Set(controls)];
+  }
+
+  function calculateRiskScore(item){
+    const amount = Number(document.getElementById('amountLevel').value || 1);
+    const freq = Number(document.getElementById('frequencyLevel').value || 1);
+    const vent = Number(document.getElementById('ventilationLevel').value || 1);
+    const time = Number(document.getElementById('workTimeLevel').value || 1);
+
+    const base = Number(item.hazardWeight || item.hazard_score || 3) + Number(item.dangerWeight || item.danger_score || 3);
+    const score = base + amount + freq + vent + time;
+
+    let levelKey = 'riskLow';
+    let cls = 'low';
+
+    if(score >= 15){
+      levelKey = 'riskVeryHigh';
+      cls='high';
+    }else if(score >= 12){
+      levelKey = 'riskHigh';
+      cls='high';
+    }else if(score >= 9){
+      levelKey = 'riskMid';
+      cls='mid';
+    }
+
+    return {
+      score,
+      level:DICT[currentLang][levelKey],
+      className:cls
+    };
+  }
+
+  function applyChemical(item){
+    document.getElementById('chemName').value = getChemicalName(item);
+    document.getElementById('casNo').value = item.cas || '';
+  }
+
+  function analyzeChemical(){
+    const keyword =
+      document.getElementById('searchKeyword').value ||
+      document.getElementById('chemName').value ||
+      document.getElementById('casNo').value;
+
+    const item = searchChemicalRecord(keyword);
+
+    if(!item){
+      alert(DICT[currentLang].notFound);
+      return;
+    }
+
+    applyChemical(item);
+
+    const risk = calculateRiskScore(item);
+    const data = {
+      item,
+      risk,
+      controls: buildControls(item),
+      work: document.getElementById('workDesc').value
+    };
+
+    lastAnalysis = data;
+    renderAnalysis(data);
+  }
+
+  function renderAnalysis(data){
+    const {item,risk,controls} = data;
+
+    document.getElementById('ghsBox').textContent = (item.ghs || []).join(', ') || '-';
+    document.getElementById('exposureBox').textContent = (item.exposure || []).join(', ') || '-';
+    document.getElementById('ppeBox').textContent = (item.ppe || []).join(', ') || '-';
+    document.getElementById('storageBox').textContent = (item.storage || []).join(', ') || '-';
+    document.getElementById('riskBox').innerHTML = `<span class="pill ${risk.className}">${risk.level}</span>`;
+    document.getElementById('scoreBox').textContent = `${DICT[currentLang].scoreLabel}: ${risk.score}`;
+    document.getElementById('controlBox').innerHTML = controls.map(v=>`<li>${v}</li>`).join('');
+  }
+
+  function pushAnalysisToReport(){
+    if(!lastAnalysis){
+      analyzeChemical();
+      if(!lastAnalysis) return;
+    }
+
+    const item = lastAnalysis.item;
+
+    document.getElementById('r1-work').value = document.getElementById('workDesc').value;
+    document.getElementById('m1-name').value = getChemicalName(item);
+    document.getElementById('m1-cas').value = item.cas || '';
+
+    document.getElementById('r2-work').value = document.getElementById('workDesc').value;
+    document.getElementById('r2m1-name').value = getChemicalName(item);
+    document.getElementById('r2m1-cas').value = item.cas || '';
+
+    document.getElementById('r2-hm1-method').value = item.hazardMethod || '컨트롤 밴딩';
+    document.getElementById('r2-hm1-level').value = `${lastAnalysis.risk.level} / ${(item.ghs || []).join(', ')}`;
+    document.getElementById('r2-dm1-method').value = item.dangerMethod || '위험성 스크리닝 도구';
+    document.getElementById('r2-dm1-level').value = `${lastAnalysis.risk.level} / ${(item.storage || []).join(', ')}`;
+    document.getElementById('r2-control').value = lastAnalysis.controls.join('\n');
+
+    fillMaterial1(lastAnalysis);
+    setTab('report1');
+  }
+
+  function fillMaterial1(data){
+    const item = data.item;
+    const controls = data.controls.join(', ');
+
+    document.getElementById('r1-h-method').value = item.hazardMethod || '컨트롤 밴딩';
+    document.getElementById('r1-h-risk').value = `${data.risk.level} / ${(item.ghs || []).join(', ')}`;
+    document.getElementById('r1-h-content').value = controls;
+    document.getElementById('r1-h-due').value = new Date().toISOString().slice(0,10);
+
+    document.getElementById('r1-d-method').value = item.dangerMethod || '위험성 스크리닝 도구';
+    document.getElementById('r1-d-risk').value = `${data.risk.level} / ${(item.storage || []).join(', ')}`;
+    document.getElementById('r1-d-content').value = controls;
+    document.getElementById('r1-d-due').value = new Date().toISOString().slice(0,10);
+  }
+
+  function renderReport1(){
+    const body = document.getElementById('report1Body');
+    body.innerHTML = `
+      ${materialBlock('1','r1-h-method','r1-h-risk','r1-h-content','r1-h-due','r1-h-done','r1-h-remark','r1-d-method','r1-d-risk','r1-d-content','r1-d-due','r1-d-done','r1-d-remark')}
+      ${materialBlock('2','m2-h-method','m2-h-risk','m2-h-content','m2-h-due','m2-h-done','m2-h-remark','m2-d-method','m2-d-risk','m2-d-content','m2-d-due','m2-d-done','m2-d-remark')}
+      ${materialBlock('3','m3-h-method','m3-h-risk','m3-h-content','m3-h-due','m3-h-done','m3-h-remark','m3-d-method','m3-d-risk','m3-d-content','m3-d-due','m3-d-done','m3-d-remark')}
+      ${materialBlock('4','m4-h-method','m4-h-risk','m4-h-content','m4-h-due','m4-h-done','m4-h-remark','m4-d-method','m4-d-risk','m4-d-content','m4-d-due','m4-d-done','m4-d-remark')}
+    `;
+  }
+
+  function materialBlock(n, hm, hr, hc, hd, hdone, hrem, dm, dr, dc, dd, ddone, drem){
+    const t = DICT[currentLang];
+    return `
+      <tr>
+        <td rowspan="14" class="blue">${t['mat'+n]}</td>
+        <td rowspan="7">${t.harmfulness}</td>
+        <td>${t.method}</td>
+        <td colspan="4"><input id="${hm}"></td>
+        <td colspan="2"></td>
+      </tr>
+      <tr><td>${t.riskLevel}</td><td colspan="4"><textarea class="sm" id="${hr}"></textarea></td><td colspan="2"></td></tr>
+      <tr><td rowspan="5">${t.riskReduction}</td><td>${t.content}</td><td colspan="4"><textarea class="sm" id="${hc}"></textarea></td><td colspan="2"></td></tr>
+      <tr><td>${t.status}</td><td colspan="4"><div class="checks"><label><input type="checkbox"> ${t.doAction}</label><label><input type="checkbox"> ${t.hold}</label><label><input type="checkbox"> ${t.maintain}</label></div></td><td colspan="2"></td></tr>
+      <tr><td>${t.dueDate}</td><td colspan="4"><input id="${hd}"></td><td colspan="2"></td></tr>
+      <tr><td>${t.doneDate}</td><td colspan="4"><input id="${hdone}"></td><td colspan="2"></td></tr>
+      <tr><td>${t.remark}</td><td colspan="4"><textarea class="sm" id="${hrem}"></textarea></td><td colspan="2"></td></tr>
+
+      <tr>
+        <td rowspan="7">${t.danger}</td>
+        <td>${t.method}</td>
+        <td colspan="4"><input id="${dm}"></td>
+        <td colspan="2"></td>
+      </tr>
+      <tr><td>${t.riskLevel}</td><td colspan="4"><textarea class="sm" id="${dr}"></textarea></td><td colspan="2"></td></tr>
+      <tr><td rowspan="5">${t.riskReduction}</td><td>${t.content}</td><td colspan="4"><textarea class="sm" id="${dc}"></textarea></td><td colspan="2"></td></tr>
+      <tr><td>${t.status}</td><td colspan="4"><div class="checks"><label><input type="checkbox"> ${t.doAction}</label><label><input type="checkbox"> ${t.hold}</label><label><input type="checkbox"> ${t.maintain}</label></div></td><td colspan="2"></td></tr>
+      <tr><td>${t.dueDate}</td><td colspan="4"><input id="${dd}"></td><td colspan="2"></td></tr>
+      <tr><td>${t.doneDate}</td><td colspan="4"><input id="${ddone}"></td><td colspan="2"></td></tr>
+      <tr><td>${t.remark}</td><td colspan="4"><textarea class="sm" id="${drem}"></textarea></td><td colspan="2"></td></tr>
+    `;
+  }
+
+  function renderSummary(){
+    const body = document.getElementById('summaryBody');
+    body.innerHTML = Array.from({length:6}).map((_,i)=>`
+      <tr>
+        <td><input value="${i===0?'AB 공장':''}"></td>
+        <td><input value="${i===0?'CCC':''}"></td>
+        <td><input value="${i===0?'DDD':''}"></td>
+        <td><input value="${i===0?'2026-03-11':''}"></td>
+        <td><input value="${i===0?'2026-09-11':''}"></td>
+        <td><textarea>${i===0?'세정 작업':''}</textarea></td>
+        <td><input value="${i===0?'세정제':''}"></td>
+        <td><input value="${i===0?'아세톤':''}"></td>
+        <td><input value="${i===0?'67-64-1':''}"></td>
+        <td><textarea>${i===0?'컨트롤 밴딩':''}</textarea></td>
+        <td><textarea>${i===0?'리스크 레벨 4 / 인화성, 눈 자극':''}</textarea></td>
+        <td><textarea>${i===0?'보호장갑, 국소배기, 화기 엄금':''}</textarea></td>
+        <td><input value="${i===0?'대응한다':''}"></td>
+        <td><input value="${i===0?'2026-04-30':''}"></td>
+        <td><textarea></textarea></td>
+        <td><textarea>${i===0?'위험성 스크리닝':''}</textarea></td>
+        <td><textarea>${i===0?'리스크 레벨 4 / 저장, 환기 관리':''}</textarea></td>
+        <td><textarea>${i===0?'점화원 차단, 정전기 방지':''}</textarea></td>
+        <td><input value="${i===0?'현상 유지':''}"></td>
+        <td><input value="${i===0?'2026-04-30':''}"></td>
+        <td><textarea></textarea></td>
+      </tr>
+    `).join('');
+  }
+
+  function fillAnalyzerDemo(){
+    document.getElementById('searchKeyword').value = '67-64-1';
+    document.getElementById('workDesc').value = '세정 작업';
+    analyzeChemical();
+  }
+
+  function fillDemoReport1(){
+    document.getElementById('r1-site').value = '동진건설 김해사이언스 현장';
+    document.getElementById('r1-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('r1-next').value = '2026-09-11';
+    document.getElementById('r1-manager').value = '김대홍';
+    document.getElementById('r1-staff').value = '안전관리자 홍길동';
+    document.getElementById('r1-work').value = '아세톤을 사용한 세정 작업';
+    document.getElementById('m1-name').value = '아세톤';
+    document.getElementById('m1-cas').value = '67-64-1';
+  }
+
+  function fillDemoReport2(){
+    document.getElementById('r2-site').value = '동진건설 김해사이언스 현장';
+    document.getElementById('r2-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('r2-next').value = '2026-09-11';
+    document.getElementById('r2-manager').value = '김대홍';
+    document.getElementById('r2-staff').value = '안전관리자 홍길동';
+    document.getElementById('r2-work').value = '아세톤을 사용한 세정 작업';
+    document.getElementById('r2m1-name').value = '아세톤';
+    document.getElementById('r2m1-cas').value = '67-64-1';
+    document.getElementById('r2-hm1-method').value = '컨트롤 밴딩';
+    document.getElementById('r2-hm1-level').value = '리스크 레벨 4 / 인화성, 눈 자극';
+    document.getElementById('r2-dm1-method').value = '위험성 스크리닝 도구';
+    document.getElementById('r2-dm1-level').value = '리스크 레벨 4 / 저장 및 취급 위험';
+    document.getElementById('r2-control').value = '점화원 차단\n정전기 방지\n국소배기 운영\n화학방호장갑 착용';
+    document.getElementById('r2-due').value = '2026-04-30';
+  }
+
+  function fillDemoSummary(){
+    renderSummary();
+  }
+
+  function fillDemoAll(){
+    fillAnalyzerDemo();
+    fillDemoReport1();
+    fillDemoReport2();
+    fillDemoSummary();
+    pushAnalysisToReport();
+  }
+
+  function clearAllFields(){
+    document.querySelectorAll('input, textarea').forEach(el=>{
+      if(el.type!=='checkbox' && el.type!=='radio' && el.type!=='file') el.value='';
+    });
+    document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(el=>el.checked=false);
+
+    document.getElementById('ghsBox').textContent='-';
+    document.getElementById('exposureBox').textContent='-';
+    document.getElementById('ppeBox').textContent='-';
+    document.getElementById('storageBox').textContent='-';
+    document.getElementById('riskBox').textContent='-';
+    document.getElementById('scoreBox').textContent='';
+    document.getElementById('controlBox').innerHTML='';
+    document.getElementById('pdfStatus').textContent='-';
+
+    lastAnalysis = null;
+  }
+
+  function clearReport1(){
+    document.querySelectorAll('#report1 input, #report1 textarea').forEach(el=>el.value='');
+    document.querySelectorAll('#report1 input[type="checkbox"]').forEach(el=>el.checked=false);
+  }
+
+  function buildPdfFileName(){
+    const site = document.getElementById('r1-site')?.value || 'chemical-risk';
+    const chem = document.getElementById('m1-name')?.value || 'report';
+    const date = document.getElementById('r1-date')?.value || new Date().toISOString().slice(0,10);
+    return `${site}_${chem}_${date}.pdf`.replace(/\s+/g, '_');
+  }
+
+  function downloadPDF(){
+    const target = document.getElementById('pdfArea') || document.body;
+    const opt = {
+      margin:8,
+      filename:buildPdfFileName(),
+      image:{type:'jpeg', quality:0.98},
+      html2canvas:{scale:2},
+      jsPDF:{unit:'mm', format:'a4', orientation:'portrait'}
+    };
+    html2pdf().set(opt).from(target).save();
+  }
+
+  function extractCas(text){
+    const match = text.match(/\b\d{2,7}-\d{2}-\d\b/);
+    return match ? match[0] : '';
+  }
+
+  function inferHazards(text){
+    const hazards = [];
+    if(/flammable|highly flammable|인화/i.test(text)) hazards.push('인화성');
+    if(/toxic|acute toxicity|독성/i.test(text)) hazards.push('독성');
+    if(/corrosive|corrosion|부식/i.test(text)) hazards.push('부식성');
+    if(/eye irritation|eye damage|눈 자극/i.test(text)) hazards.push('눈 자극');
+    if(/skin irritation|피부 자극/i.test(text)) hazards.push('피부 자극');
+    return [...new Set(hazards)];
+  }
+
+  function inferPPE(text){
+    const ppe = [];
+    if(/glove|장갑/i.test(text)) ppe.push('보호장갑');
+    if(/eye protection|goggle|보안경|안경/i.test(text)) ppe.push('보호안경');
+    if(/respirator|mask|방독/i.test(text)) ppe.push('방독마스크');
+    if(/ventilation|국소배기|환기/i.test(text)) ppe.push('국소배기');
+    return [...new Set(ppe)];
+  }
+
+  async function readSDSFile(file){
+    const status = document.getElementById('pdfStatus');
+    status.textContent = currentLang === 'ja' ? 'PDF解析中...' : 'PDF 분석 중...';
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data:new Uint8Array(buffer)}).promise;
+
+    let text = '';
+    for(let i=1;i<=Math.min(pdf.numPages,10);i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(it=>it.str).join(' ') + '\n';
+    }
+
+    const clean = text.replace(/\s+/g,' ').trim();
+    const cas = extractCas(clean);
+    const matched = cas ? searchChemicalRecord(cas) : null;
+
+    if(matched){
+      document.getElementById('searchKeyword').value = cas;
+      applyChemical(matched);
+
+      const merged = {
+        ...matched,
+        ghs:[...new Set([...(matched.ghs || []), ...inferHazards(clean)])],
+        ppe:[...new Set([...(matched.ppe || []), ...inferPPE(clean)])]
+      };
+
+      const risk = calculateRiskScore(merged);
+      lastAnalysis = {
+        item:merged,
+        risk,
+        controls:buildControls(merged),
+        work:document.getElementById('workDesc').value
+      };
+
+      renderAnalysis(lastAnalysis);
+      status.textContent = currentLang === 'ja'
+        ? `SDS解析完了 / CAS ${cas} 一致`
+        : `SDS 분석 완료 / CAS ${cas} 매칭`;
+    }else{
+      status.textContent = cas
+        ? (currentLang === 'ja' ? `CAS ${cas} 抽出 / DB未一致` : `CAS ${cas} 추출 / DB 미매칭`)
+        : (currentLang === 'ja' ? 'CAS抽出失敗' : 'CAS 추출 실패');
+    }
+  }
+
+  function wireEvents(){
+    document.getElementById('searchKeyword').addEventListener('input', updateAutocomplete);
+
+    document.getElementById('searchKeyword').addEventListener('change', ()=>{
+      const item = searchChemicalRecord(document.getElementById('searchKeyword').value);
+      if(item) applyChemical(item);
+    });
+
+    ['amountLevel','frequencyLevel','ventilationLevel','workTimeLevel'].forEach(id=>{
+      document.getElementById(id).addEventListener('change', ()=>{
+        if(lastAnalysis) analyzeChemical();
+      });
+    });
+
+    document.getElementById('sdsFile').addEventListener('change', async (e)=>{
+      const file = e.target.files?.[0];
+      if(file) await readSDSFile(file);
+    });
+  }
+
+  function init(){
+    wireEvents();
+    renderReport1();
+    renderSummary();
+    renderDbInfo();
+
+    const saved = localStorage.getItem('chem-risk-lang') || 'ko';
+    setLang(saved);
+  }
+
+  init();
 </script>
 </body>
 </html>

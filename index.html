@@ -9,9 +9,6 @@
   <script src="js/chemical-db-800.js"></script>
   <script src="js/risk-engine.js"></script>
 
-  <!-- PDF 출력 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
   <!-- PDF 읽기 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
@@ -254,11 +251,121 @@
       .feature-grid{grid-template-columns:1fr}
     }
     @media print{
-      .topbar,.tabs,.toolbar,.hero .action-card,.footer-note{display:none !important}
-      body{background:#fff}
-      .page{max-width:none;margin:0;padding:0}
-      .panel{border:none;box-shadow:none}
-      .section{display:block !important;padding:0}
+      /* ── 화면 요소 숨김 ── */
+      .topbar, .tabs, .toolbar,
+      .hero .action-card, .footer-note,
+      #home, #analyzer { display:none !important; }
+
+      /* ── 레이아웃 완전 초기화 ── */
+      * { box-sizing:border-box !important; }
+      html, body {
+        margin:0 !important; padding:0 !important;
+        background:#fff !important;
+        width:100% !important;
+        overflow:visible !important;
+      }
+      .page {
+        max-width:100% !important;
+        width:100% !important;
+        margin:0 !important;
+        padding:0 !important;
+        overflow:visible !important;
+      }
+      .panel {
+        border:none !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+        padding:0 !important;
+        overflow:visible !important;
+        margin:0 !important;
+      }
+
+      /* ── 섹션 제어 ── */
+      .section { display:none !important; padding:0 !important; margin:0 !important; }
+      .section.print-target { display:block !important; padding:0 !important; margin:0 !important; }
+
+      /* ── 표 래퍼 ── */
+      .sheet-wrap {
+        overflow:visible !important;
+        display:block !important;
+        width:100% !important;
+        padding:0 !important;
+        margin:0 !important;
+      }
+
+      /* ── 표 본체: 100% + col 자동 균등 ── */
+      .sheet {
+        width:100% !important;
+        min-width:0 !important;
+        max-width:100% !important;
+        table-layout:auto !important;   /* auto로 브라우저가 균등 계산 */
+        border-collapse:collapse !important;
+        font-size:8.5pt !important;
+        background:#fff !important;
+        word-break:break-word !important;
+      }
+      .sheet col { width:auto !important; min-width:0 !important; }
+
+      .sheet th, .sheet td {
+        border:1px solid #333 !important;
+        padding:2px 3px !important;
+        vertical-align:middle !important;
+        word-break:break-word !important;
+        overflow-wrap:break-word !important;
+        max-width:0 !important;   /* table-layout:auto에서 줄바꿈 강제 */
+      }
+      .sheet .title {
+        font-size:14pt !important;
+        font-weight:900 !important;
+        text-align:center !important;
+        padding:8px !important;
+        max-width:none !important;
+      }
+      .sheet .label {
+        font-weight:700 !important;
+        max-width:none !important;
+      }
+
+      /* ── 색상 유지 ── */
+      .sheet .blue     { background:#9fc2cf !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+      .sheet .subhead  { background:#cfe5ea !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+      .sheet .subhead2 { background:#e7f3f6 !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+
+      /* ── input/textarea → 텍스트처럼 ── */
+      .sheet input:not([type=checkbox]):not([type=radio]):not([type=file]),
+      .sheet textarea {
+        display:block !important;
+        border:none !important; outline:none !important;
+        padding:0 !important; margin:0 !important;
+        background:transparent !important;
+        resize:none !important;
+        overflow:visible !important;
+        height:auto !important; min-height:0 !important;
+        width:100% !important;
+        font-size:8.5pt !important;
+        font-family:inherit !important;
+        line-height:1.4 !important;
+        white-space:pre-wrap !important;
+        word-break:break-word !important;
+        -webkit-appearance:none !important;
+        box-shadow:none !important;
+      }
+
+      /* ── 체크박스 / 라디오 ── */
+      .sheet input[type=checkbox],
+      .sheet input[type=radio] {
+        -webkit-appearance:auto !important;
+        appearance:auto !important;
+        width:11px !important; height:11px !important;
+        margin:0 3px 0 0 !important;
+        vertical-align:middle !important;
+      }
+      .checks { display:flex !important; flex-direction:column !important; gap:4px !important; }
+      .checks label { display:flex !important; align-items:center !important; gap:3px !important; font-size:8pt !important; }
+
+      /* ── 페이지 나눔 ── */
+      .sheet tr { page-break-inside:avoid !important; break-inside:avoid !important; }
+      .sheet    { page-break-inside:auto !important; break-inside:auto !important; }
     }
 
 #pdfArea{
@@ -329,16 +436,17 @@
   padding:4px;
 }
 
-/* PDF 페이지 자동 분리 */
+/* 페이지 나눔 */
 .page-break{ page-break-before:always; }
-.sheet tr{ page-break-inside:avoid; }
-.sheet{ page-break-inside:auto; }
-.sheet-wrap{ page-break-inside:auto; }
 
-@media print{
-  .sheet{ width:100% !important; min-width:unset !important; }
-  .sheet-wrap{ overflow:visible !important; display:block !important; }
-  #pdfArea{ width:100% !important; }
+/* 기본 @page (JS가 덮어씀) */
+@page { size:A4 portrait; margin:6mm; }
+
+@media print {
+  input[type=checkbox], input[type=radio] {
+    -webkit-appearance:auto !important;
+    appearance:auto !important;
+  }
 }
 
 
@@ -354,8 +462,9 @@
     <div class="controls">
       <button id="lang-ko" class="active">한국어</button>
       <button id="lang-ja">日本語</button>
-      <button onclick="downloadReportPDF()">실시보고서 PDF</button>
-<button onclick="downloadSummaryPDF()">결과일람 PDF</button>
+      <button onclick="printSection('report1','portrait')">🖨️ 실시보고서① 인쇄</button>
+      <button onclick="printSection('report2','portrait')">🖨️ 실시보고서② 인쇄</button>
+      <button onclick="printSection('summary','landscape')">🖨️ 결과일람 인쇄</button>
     </div>
   </div>
 
@@ -1421,76 +1530,34 @@ danger: danger.join(", ")
   materialIndex = 1;
 }
 
-  function buildPdfFileName(){
-    const site = document.getElementById('r1-site')?.value || 'chemical-risk';
-    const chem = document.getElementById('m1-name')?.value || 'report';
-    const date = document.getElementById('r1-date')?.value || new Date().toISOString().slice(0,10);
-    return `${site}_${chem}_${date}.pdf`.replace(/\s+/g, '_');
-  }
+  /* ── 인쇄 함수 ── */
+  let _printStyleEl = null;
 
-  function prepareForPdf(container){
-    const saved = [];
-    container.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea').forEach(el=>{
-      const span = document.createElement('span');
-      span.style.cssText = 'display:block;width:100%;min-height:24px;font:inherit;font-size:12px;white-space:pre-wrap;word-break:break-word;padding:2px 4px;box-sizing:border-box;line-height:1.5;';
-      span.textContent = el.value || '';
-      el.parentNode.insertBefore(span, el);
-      el.style.display = 'none';
-      saved.push({el, span});
+  function printSection(sectionId, orientation){
+    // 1) 인쇄 대상 마킹
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('print-target'));
+    const target = document.getElementById(sectionId);
+    if(!target) return;
+    target.classList.add('print-target');
+
+    // 2) @page 방향 + 여백 주입
+    if(_printStyleEl) _printStyleEl.remove();
+    _printStyleEl = document.createElement('style');
+    _printStyleEl.id = 'print-page-style';
+    // 세로(portrait): 좌우 6mm / 가로(landscape): 좌우 5mm
+    const margin = orientation === 'landscape' ? '5mm' : '6mm';
+    _printStyleEl.textContent = `@page { size:A4 ${orientation}; margin:${margin}; }`;
+    document.head.appendChild(_printStyleEl);
+
+    // 3) 렌더링 안정화 후 인쇄
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        window.print();
+        setTimeout(()=>{
+          target.classList.remove('print-target');
+        }, 500);
+      });
     });
-    container.querySelectorAll('input[type=checkbox]').forEach(el=>{
-      const span = document.createElement('span');
-      span.style.cssText = 'font-size:14px;margin-right:3px;';
-      span.textContent = el.checked ? '☑' : '☐';
-      el.parentNode.insertBefore(span, el);
-      el.style.display = 'none';
-      saved.push({el, span});
-    });
-    return saved;
-  }
-
-  function restoreAfterPdf(saved){
-    saved.forEach(({el,span})=>{ el.style.display=''; span.remove(); });
-  }
-
-  function downloadReportPDF(){
-    const el = document.getElementById('pdfArea');
-    if(!el) return;
-    const saved = prepareForPdf(el);
-    // 일시적으로 overflow 해제
-    el.style.overflow = 'visible';
-    html2pdf().set({
-      margin:[8,6,8,6],
-      filename:buildPdfFileName(),
-      image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true,scrollX:0,scrollY:0,width:794,windowWidth:810},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-      pagebreak:{mode:['css','legacy'],avoid:['tr']}
-    }).from(el).save()
-      .then(()=>{ restoreAfterPdf(saved); el.style.overflow=''; })
-      .catch(()=>{ restoreAfterPdf(saved); el.style.overflow=''; });
-  }
-
-  function downloadSummaryPDF(){
-    const tableWrap = document.querySelector('#summary .sheet-wrap');
-    if(!tableWrap) return;
-    const saved = prepareForPdf(tableWrap);
-    const site = document.getElementById('r1-site')?.value || 'chemical-risk';
-    const date = document.getElementById('r1-date')?.value || new Date().toISOString().slice(0,10);
-    // 임시로 overflow 해제
-    const origOverflow = tableWrap.style.overflow;
-    tableWrap.style.overflow = 'visible';
-    tableWrap.style.display = 'block';
-    html2pdf().set({
-      margin:[6,4,6,4],
-      filename:`결과일람_${site}_${date}.pdf`.replace(/\s+/g,'_'),
-      image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true,scrollX:0,scrollY:0,width:1123,windowWidth:1200},
-      jsPDF:{unit:'mm',format:'a4',orientation:'landscape'},
-      pagebreak:{mode:['css','legacy'],avoid:['tr']}
-    }).from(tableWrap).save()
-      .then(()=>{ restoreAfterPdf(saved); tableWrap.style.overflow=origOverflow; tableWrap.style.display=''; })
-      .catch(()=>{ restoreAfterPdf(saved); tableWrap.style.overflow=origOverflow; tableWrap.style.display=''; });
   }
 
 
